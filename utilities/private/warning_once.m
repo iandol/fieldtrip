@@ -191,12 +191,11 @@ while strfind(stack(i0).name, 'ft_preamble')
   i0=i0+1;
 end
 
-fname = horzcat(stack(end).name);
+fname = horzcat(fixname(stack(end).name));
 %remove anything but characters and numbers
 fname = regexprep(fname,'[^a-zA-Z0-9]','');
-if ~issubfield(ft_previous_warnings, stack(end).name)
-  name = regexprep(stack(end).name,'\.','');
-  ft_previous_warnings.(name) = []; % iteratively build up structure fields
+if ~issubfield(ft_previous_warnings, fixname(stack(end).name))
+  ft_previous_warnings.(fixname(stack(end).name)) = []; % iteratively build up structure fields
 end
 
 for i=numel(stack)-1:-1:(i0)
