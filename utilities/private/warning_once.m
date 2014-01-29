@@ -193,9 +193,9 @@ end
 
 fname = horzcat(stack(end).name);
 if ~issubfield(ft_previous_warnings, stack(end).name)
-  ft_previous_warnings.(stack(end).name) = []; % iteratively build up structure fields
+  name = regexprep(stack(end).name,'\.','');
+  ft_previous_warnings.(name) = []; % iteratively build up structure fields
 end
-  
 
 for i=numel(stack)-1:-1:(i0)
   % skip postamble scripts
