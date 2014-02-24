@@ -1,7 +1,7 @@
 function test_ft_conjunctionanalysis
 
 % MEM 1500mb
-% WALLTIME 0:03:01
+% WALLTIME 00:10:00
 
 % TEST test_ft_conjunctionanalysis
 % FT_CONJUNCTIONANALYSIS finds the minimum statistic common across two or 
@@ -28,6 +28,15 @@ timelock3 = timelock2;
 timelock3.stat  = randn(2,10);
 
 stat = ft_conjunctionanalysis([], timelock1, timelock2, timelock3);
+
+% 2 sinuses - for fun
+timelock1.label = {'chan1';'chan2'};
+timelock1.time  = [1/1000:1/1000:1];
+timelock1.dimord = 'chan_time';
+timelock1.stat  = sin(2*pi*2*timelock1.time);
+timelock2 = timelock1;
+timelock2.stat  = sin(2*pi*2*timelock1.time+200);
+stat = ft_conjunctionanalysis([], timelock1, timelock2);
 
 % chan-freq data
 freq1.label = {'chan1';'chan2'};

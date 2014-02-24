@@ -18,12 +18,14 @@ function [jobid, puttime] = qsubfeval(varargin)
 %   backend     = string, can be 'torque', 'sge', 'slurm', 'lsf', 'system', 'local' (default is automatic)
 %   diary       = string, can be 'always', 'never', 'warning', 'error' (default = 'error')
 %   queue       = string, which queue to submit the job in (default is empty)
+%   waitfor     = string, jobid of job to wait on finishing before executing current job
 %   options     = string, additional options that will be passed to qsub/srun (default is empty)
 %   batch       = number, of the bach to which the job belongs. When called by QSUBCELLFUN
 %                 it will be a number that is automatically incremented over subsequent calls.
 %   batchid     = string that is used for the compiled application filename and to identify
 %                 the jobs in the queue, the default is automatically determined and looks
 %                 like user_host_pid_batch.
+%   matlabcmd   = string, the Linux command line to start MATLAB on the compute nodes (default is automatic
 %   display     = 'yes' or 'no', whether the nodisplay option should be passed to MATLAB (default = 'no', meaning nodisplay)
 %   jvm         = 'yes' or 'no', whether the nojvm option should be passed to MATLAB (default = 'yes', meaning with jvm)
 %
@@ -72,10 +74,12 @@ optbeg = optbeg | strcmp('memoverhead',   strargin);
 optbeg = optbeg | strcmp('backend',       strargin);
 optbeg = optbeg | strcmp('queue',         strargin);
 optbeg = optbeg | strcmp('options',       strargin);
+optbeg = optbeg | strcmp('matlabcmd',     strargin);
 optbeg = optbeg | strcmp('jvm',           strargin);
 optbeg = optbeg | strcmp('display',       strargin);
 optbeg = optbeg | strcmp('nargout',       strargin);
 optbeg = optbeg | strcmp('whichfunction', strargin);
+optbeg = optbeg | strcmp('waitfor',       strargin);
 optbeg = find(optbeg);
 optarg = varargin(optbeg:end);
 
@@ -95,9 +99,11 @@ backend       = ft_getopt(optarg, 'backend', defaultbackend);     % this uses th
 queue         = ft_getopt(optarg, 'queue', []);                   % the default is specified further down in the code
 submitoptions = ft_getopt(optarg, 'options', []);
 display       = ft_getopt(optarg, 'display', 'no');
+matlabcmd     = ft_getopt(optarg, 'matlabcmd', []);
 jvm           = ft_getopt(optarg, 'jvm', 'yes');
 numargout     = ft_getopt(optarg, 'nargout', []);
 whichfunction = ft_getopt(optarg, 'whichfunction');               % the complete filename to the function, including path
+waitfor       = ft_getopt(optarg, 'waitfor');
 
 % skip the optional key-value arguments
 if ~isempty(optbeg)
@@ -132,7 +138,7 @@ end
 jobid = generatejobid(batch, batchid);
 
 % get the current working directory to store the temp files in
-curPwd = getcustompwd();
+curPwd = getcustompwd(); 
 
 % each job should have a different random number sequence
 randomseed = rand(1)*double(intmax);
@@ -150,7 +156,9 @@ save(inputfile, 'argin', 'optin');
 
 if ~compiled
   
-  if isempty(previous_matlabcmd)
+  if ~isempty(matlabcmd) 
+    % take the user-specified matlab startup script
+  elseif isempty(previous_matlabcmd)
     % determine the name of the matlab startup script
     if matlabversion(7.1)
       matlabcmd = 'matlab71';
@@ -263,6 +271,11 @@ switch backend
     
     if ~isempty(memreq) && ~isnan(memreq) && ~isinf(memreq)
       submitoptions = [submitoptions sprintf('-l h_vmem=%.0f ', memreq+memoverhead)];
+    end
+    
+    if ~isempty(waitfor)
+      % waitfor contains the jobid of the job to wait for
+      submitoptions = [submitoptions sprintf('-W depend=afterok:%s', qsublist('getpbsid', waitfor))];
     end
     
     if compiled

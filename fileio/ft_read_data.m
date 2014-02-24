@@ -659,6 +659,7 @@ switch dataformat
     dimord = 'chans_samples_trials';
     
   case {'egi_mff_v1' 'egi_mff'} % this is currently the default
+    
     % The following represents the code that was written by Ingrid, Robert
     % and Giovanni to get started with the EGI mff dataset format. It might
     % not support all details of the file formats.
@@ -676,8 +677,7 @@ switch dataformat
                 data_in_epoch(iEpoch) = length(intersect(begsamp_epoch:endsamp_epoch,begsample:endsample));
             end
             if sum(data_in_epoch>1) > 1
-                fprintf('Requested sample %i to %i. \n', begsample, endsample);
-                error('The requested data is spread out over multiple epochs with possibly discontinuous boundaries. This is not allowed. Adjust trl to request only data within a single epoch.');
+                warning('The requested segment from %i to %i is spread out over multiple epochs with possibly discontinuous boundaries', begsample, endsample);
             end
         end
     end
@@ -750,7 +750,7 @@ switch dataformat
     ft_hastoolbox('egi_mff', 1);
     % ensure that the JVM is running and the jar file is on the path
       %%%%%%%%%%%%%%%%%%%%%%
-      %workaround for Matlab bug resulting in global variables being cleared
+      %workaround for MATLAB bug resulting in global variables being cleared
       globalTemp=cell(0);
       globalList=whos('global');
       varList=whos;
@@ -763,7 +763,7 @@ switch dataformat
       mff_setup;
       
       %%%%%%%%%%%%%%%%%%%%%%
-      %workaround for Matlab bug resulting in global variables being cleared
+      %workaround for MATLAB bug resulting in global variables being cleared
       varNames={varList.name};
       for i=1:length(globalList)
           eval([globalList(i).name '=globalTemp{i};']);
@@ -911,6 +911,13 @@ switch dataformat
     if (hdr.orig.iscontinuous)
       dat = fiff_read_raw_segment(hdr.orig.raw,begsample+hdr.orig.raw.first_samp-1,endsample+hdr.orig.raw.first_samp-1,chanindx);
       dimord = 'chans_samples';
+    elseif (hdr.orig.isepoched)
+      data = permute(hdr.orig.epochs.data, [2 3 1]);  % Chan X Sample X Trials
+      if requesttrials
+        dat = data(chanindx, :, begtrial:endtrial);
+      else
+        dat = data(chanindx, begsample:endsample);  % reading over boundaries
+      end
     elseif (hdr.orig.isaverage)
       dat = cat(2, hdr.orig.evoked.epochs);            % concatenate all epochs, this works both when they are of constant or variable length
       if checkboundary
@@ -924,8 +931,6 @@ switch dataformat
       end
       dat = dat(chanindx, begsample:endsample);        % select the desired channels and samples
       dimord = 'chans_samples';
-    elseif (hdr.orig.isepoched)
-      error('Support for epoched *.fif data is not yet implemented.')
     end
     
   case 'neuromag_mex'

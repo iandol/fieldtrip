@@ -1,7 +1,7 @@
 function test_example_simulate_forward_dipolefit
 
-% MEM 100mb
-% WALLTIME 00:05:00
+% MEM 1gb
+% WALLTIME 00:10:00
 
 % TEST test_example_simulate_forward_dipolefit
 % TEST ft_dipolesimulation ft_timelockanalysis ft_dipolefitting
@@ -23,7 +23,7 @@ end
 % create a concentric 3-sphere volume conductor, the radius is the same as for the electrodes
 vol = [];
 vol.r = [0.88 0.92 1.00]; % radii of spheres
-vol.c = [1 1/80 1];       % conductivity
+vol.cond = [1 1/80 1];       % conductivity
 vol.o = [0 0 0];          % center of sphere
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
