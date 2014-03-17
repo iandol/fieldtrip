@@ -371,7 +371,10 @@ if doTopData
     if ylim(2)<0
       if yl>0, yl = 0; end
     end
-    ylim(2) = yl;
+    ylim(2) = yl; 
+	 if ylim(2) == ylim(1) %if the plot is empty
+		 ylim(2)=ylim(1)+1; %be nice to set
+	 end
     set(gca,'YLim', ylim)
   end    
   
@@ -395,6 +398,7 @@ end
 
 % set the limits for the axis
 set(ax,'XLim', [cfg.latency])
+if nTrialsShown==0; nTrialsShown = 1; end %
 set(ax(1), 'YLim', [0.5 nTrialsShown+0.5]); % number of trials
 set(ax,'TickDir','out') % put the tickmarks outside
 
