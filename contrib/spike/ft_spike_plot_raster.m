@@ -31,6 +31,7 @@ function [cfg] = ft_spike_plot_raster(cfg, spike, timelock)
 %                           subsequent rows representing trials (row-unit is 1).
 %   cfg.trialborders     =  'yes' or 'no'. If 'yes', borders of trials are
 %                           plotted
+%   cfg.showselection    =  'yes' or 'no' (default). If yes plot raster Y axis for selection in cfg.trials 
 %   cfg.topplotsize      =  number ranging from 0 to 1, indicating the proportion of the
 %                           rasterplot that the top plot will take (e.g., with 0.7 the top
 %                           plot will be 70% of the rasterplot in size). Default = 0.5.
@@ -66,6 +67,7 @@ cfg.topplotsize  = ft_getopt(cfg,'topplotsize', 0.5);
 cfg.topplotfunc  = ft_getopt(cfg,'topplotfunc', 'bar');
 cfg.errorbars    = ft_getopt(cfg,'errorbars', 'sem');
 cfg.trialborders = ft_getopt(cfg,'trialborders','yes');
+cfg.showselection = ft_getopt(cfg,'showselection','no');
 cfg.interactive  = ft_getopt(cfg,'interactive','yes');
 
 % ensure that the options are valid
@@ -79,9 +81,10 @@ cfg = ft_checkopt(cfg,'topplotsize', 'doublescalar');
 cfg = ft_checkopt(cfg,'topplotfunc', 'char', {'bar', 'line'});
 cfg = ft_checkopt(cfg,'errorbars', 'char', {'sem', 'std', 'conf95%', 'no', 'var'});
 cfg = ft_checkopt(cfg,'trialborders', 'char', {'yes', 'no'});
+cfg = ft_checkopt(cfg,'showselection', 'char', {'yes', 'no'});
 cfg = ft_checkopt(cfg,'interactive', 'char', {'yes', 'no'});
 
-cfg = ft_checkconfig(cfg, 'allowed', {'spikechannel', 'latency', 'trials', 'linewidth', 'cmapneurons', 'spikelength', 'topplotsize', 'topplotfunc', 'errorbars', 'trialborders', 'interactive', 'warning'});
+cfg = ft_checkconfig(cfg, 'allowed', {'spikechannel', 'latency', 'trials', 'linewidth', 'cmapneurons', 'spikelength', 'topplotsize', 'topplotfunc', 'errorbars', 'trialborders', 'showselection', 'interactive', 'warning'});
 
 % check if a third input is present, and check if it's a timelock structure
 if nargin==3
@@ -102,6 +105,7 @@ if nUnits==0, error('No spikechannel selected by means of cfg.spikechannel'); en
 
 % get the number of trials and set the cfg.trials field
 nTrialsOrig = size(spike.trialtime,1);
+nTrialsShown = nTrialsOrig;
 if  strcmp(cfg.trials,'all')
   cfg.trials = 1:nTrialsOrig;
 elseif islogical(cfg.trials)
@@ -152,6 +156,16 @@ for iUnit = 1:nUnits
   isInTrials     = ismember(spike.trial{unitIndx},cfg.trials);
   unitX{iUnit}   = spike.time{unitIndx}(isInTrials(:) & latencySel(:));
   unitY{iUnit}   = spike.trial{unitIndx}(isInTrials(:) & latencySel(:));
+  if strcmp(cfg.showselection,'yes')
+	  unitYY{iUnit} = zeros(size(unitY{iUnit}));
+	  u = unique(unitY{iUnit});
+	  for i = 1:length(u)
+		  idx = find(unitY{iUnit} == u(i));
+		  unitYY{iUnit}(idx) = i;
+	  end
+	  nTrialsShown = length(u); 
+	  unitY{iUnit} = unitYY{iUnit};
+  end
 end
 
 % some error checks on spike length
@@ -381,7 +395,7 @@ end
 
 % set the limits for the axis
 set(ax,'XLim', [cfg.latency])
-set(ax(1), 'YLim', [0.5 nTrialsOrig+0.5]); % number of trials
+set(ax(1), 'YLim', [0.5 nTrialsShown+0.5]); % number of trials
 set(ax,'TickDir','out') % put the tickmarks outside
 
 % now link the axes, constrain zooming and keep ticks intact
