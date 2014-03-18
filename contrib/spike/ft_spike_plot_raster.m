@@ -31,7 +31,7 @@ function [cfg] = ft_spike_plot_raster(cfg, spike, timelock)
 %                           subsequent rows representing trials (row-unit is 1).
 %   cfg.trialborders     =  'yes' or 'no'. If 'yes', borders of trials are
 %                           plotted
-%   cfg.showselection    =  'yes' or 'no' (default). If yes plot raster Y axis for selection in cfg.trials 
+%   cfg.plotselection	 =  'yes' or 'no' (default). If yes plot raster Y axis for selection in cfg.trials 
 %   cfg.topplotsize      =  number ranging from 0 to 1, indicating the proportion of the
 %                           rasterplot that the top plot will take (e.g., with 0.7 the top
 %                           plot will be 70% of the rasterplot in size). Default = 0.5.
@@ -40,6 +40,7 @@ function [cfg] = ft_spike_plot_raster(cfg, spike, timelock)
 %
 %   cfg.interactive      = 'yes' (default) or 'no'. If 'yes', zooming and panning operate via callbacks.
 %   cfg.trials           =  numeric or logical selection of trials (default = 'all').
+%   cfg.parenthandle     =  [] or handle to plot within a particular parent.
 
 % Copyright (C) 2010-2013, Martin Vinck
 %
@@ -67,7 +68,7 @@ cfg.topplotsize  = ft_getopt(cfg,'topplotsize', 0.5);
 cfg.topplotfunc  = ft_getopt(cfg,'topplotfunc', 'bar');
 cfg.errorbars    = ft_getopt(cfg,'errorbars', 'sem');
 cfg.trialborders = ft_getopt(cfg,'trialborders','yes');
-cfg.showselection = ft_getopt(cfg,'showselection','no');
+cfg.plotselection = ft_getopt(cfg,'plotselection','no');
 cfg.interactive  = ft_getopt(cfg,'interactive','yes');
 
 % ensure that the options are valid
@@ -81,10 +82,10 @@ cfg = ft_checkopt(cfg,'topplotsize', 'doublescalar');
 cfg = ft_checkopt(cfg,'topplotfunc', 'char', {'bar', 'line'});
 cfg = ft_checkopt(cfg,'errorbars', 'char', {'sem', 'std', 'conf95%', 'no', 'var'});
 cfg = ft_checkopt(cfg,'trialborders', 'char', {'yes', 'no'});
-cfg = ft_checkopt(cfg,'showselection', 'char', {'yes', 'no'});
+cfg = ft_checkopt(cfg,'plotselection', 'char', {'yes', 'no'});
 cfg = ft_checkopt(cfg,'interactive', 'char', {'yes', 'no'});
 
-cfg = ft_checkconfig(cfg, 'allowed', {'spikechannel', 'latency', 'trials', 'linewidth', 'cmapneurons', 'spikelength', 'topplotsize', 'topplotfunc', 'errorbars', 'trialborders', 'showselection', 'interactive', 'warning'});
+cfg = ft_checkconfig(cfg, 'allowed', {'spikechannel', 'latency', 'trials', 'linewidth', 'cmapneurons', 'spikelength', 'topplotsize', 'topplotfunc', 'errorbars', 'trialborders', 'plotselection', 'interactive', 'warning'});
 
 % check if a third input is present, and check if it's a timelock structure
 if nargin==3
@@ -156,15 +157,15 @@ for iUnit = 1:nUnits
   isInTrials     = ismember(spike.trial{unitIndx},cfg.trials);
   unitX{iUnit}   = spike.time{unitIndx}(isInTrials(:) & latencySel(:));
   unitY{iUnit}   = spike.trial{unitIndx}(isInTrials(:) & latencySel(:));
-  if strcmp(cfg.showselection,'yes')
-	  unitYY{iUnit} = zeros(size(unitY{iUnit}));
+  if strcmp(cfg.plotselection,'yes')
+	  tempY{iUnit} = zeros(size(unitY{iUnit}));
 	  u = unique(unitY{iUnit});
 	  for i = 1:length(u)
 		  idx = find(unitY{iUnit} == u(i));
-		  unitYY{iUnit}(idx) = i;
+		  tempY{iUnit}(idx) = i;
 	  end
 	  nTrialsShown = length(u); 
-	  unitY{iUnit} = unitYY{iUnit};
+	  unitY{iUnit} = tempY{iUnit};
   end
 end
 
@@ -218,14 +219,14 @@ for iUnit = 1:nUnits
   
   % create axes for the rasterplot, all go to the same position, so do this for unit 1
   if iUnit==1
-    ax(1) = newplot;
+	 ax(1) = newplot;
     posOrig = get(ax(1), 'Position'); % original position for a standard plot
     pos     = posOrig;
     if doTopData % if topdata, we leave space on top
       posRaster   = [pos(1:3) pos(4)*(1-cfg.topplotsize)]; % and decrease the size of width and height
     else
       posRaster   = pos;
-    end
+	 end
     set(ax(1), 'ActivePositionProperty', 'position', 'Position', posRaster)
   end
   
@@ -240,7 +241,7 @@ end
 % create the labels for the first axes
 xlabel('time (sec)')
 ylabel('Trial Number')
-axis ij
+%axis ij
 
 % plot the top data
 if doTopData
@@ -412,6 +413,15 @@ if ~iscell(limY), limY = {limY}; end
 if strcmp(cfg.interactive,'yes')
   set(zoom,'ActionPostCallback',{@mypostcallback,ax,limX,limY});
   set(pan,'ActionPostCallback',{@mypostcallback,ax,limX,limY});
+end
+
+% pass positions and axis handles so downstream
+% functions can respect the positions set here.
+cfg.pos.posRaster = posRaster;
+cfg.hdl.axRaster = ax(1);
+if doTopData
+	cfg.pos.posTopPlot = posTopPlot;
+	cfg.hdl.axTopPlot = ax(2);
 end
 
 % do the general cleanup and bookkeeping at the end of the function
