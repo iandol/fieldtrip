@@ -40,7 +40,6 @@ function [cfg] = ft_spike_plot_raster(cfg, spike, timelock)
 %
 %   cfg.interactive      = 'yes' (default) or 'no'. If 'yes', zooming and panning operate via callbacks.
 %   cfg.trials           =  numeric or logical selection of trials (default = 'all').
-%   cfg.parenthandle     =  [] or handle to plot within a particular parent.
 
 % Copyright (C) 2010-2013, Martin Vinck
 %
@@ -219,14 +218,14 @@ for iUnit = 1:nUnits
   
   % create axes for the rasterplot, all go to the same position, so do this for unit 1
   if iUnit==1
-	 ax(1) = newplot;
+    ax(1) = newplot;
     posOrig = get(ax(1), 'Position'); % original position for a standard plot
     pos     = posOrig;
     if doTopData % if topdata, we leave space on top
       posRaster   = [pos(1:3) pos(4)*(1-cfg.topplotsize)]; % and decrease the size of width and height
     else
       posRaster   = pos;
-	 end
+    end
     set(ax(1), 'ActivePositionProperty', 'position', 'Position', posRaster)
   end
   
@@ -241,7 +240,7 @@ end
 % create the labels for the first axes
 xlabel('time (sec)')
 ylabel('Trial Number')
-%axis ij
+axis ij
 
 % plot the top data
 if doTopData
@@ -372,7 +371,7 @@ if doTopData
     if ylim(2)<0
       if yl>0, yl = 0; end
     end
-    ylim(2) = yl; 
+    ylim(2) = yl;
 	 if ylim(2) == ylim(1) %if the plot is empty
 		 ylim(2)=ylim(1)+1; %be nice to set
 	 end
