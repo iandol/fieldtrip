@@ -30,6 +30,7 @@ function [sts] = ft_spiketriggeredspectrum_convol(cfg, data, spike)
 %                           multi-tapering. Note that 4 Hz smoothing means
 %                           plus-minus 4 Hz, i.e. a 8 Hz smoothing box.
 %     cfg.foi             = vector 1 x numfoi, frequencies of interest
+%     cfg.latency
 %     cfg.taper           = 'dpss', 'hanning' or many others, see WINDOW (default = 'dpss')
 %     cfg.t_ftimwin       = vector 1 x numfoi, length of time window (in
 %     seconds)
@@ -112,6 +113,7 @@ cfg = ft_checkconfig(cfg, 'required', {'foi','t_ftimwin'});
 % get the options
 cfg.borderspikes   = ft_getopt(cfg, 'borderspikes','yes');
 cfg.taper          = ft_getopt(cfg, 'taper','hanning');
+cfg.latency			 = ft_getopt(cfg, 'latency',[]);
 cfg.taperopt       = ft_getopt(cfg, 'taperopt',[]);
 cfg.spikechannel   = ft_getopt(cfg,'spikechannel', 'all');
 cfg.channel        = ft_getopt(cfg,'channel', 'all');
@@ -119,6 +121,7 @@ cfg.rejectsaturation  = ft_getopt(cfg,'rejectsaturation', 'yes');
 
 % ensure that the options are valid
 cfg = ft_checkopt(cfg, 'taper',{'char', 'function_handle'});
+cfg = ft_checkopt(cfg, 'latency', {'doublevector','empty'});
 cfg = ft_checkopt(cfg, 'borderspikes','char',{'yes', 'no'});
 cfg = ft_checkopt(cfg, 't_ftimwin',{'doublevector', 'doublescalar'});
 cfg = ft_checkopt(cfg, 'foi',{'doublevector', 'doublescalar'});
@@ -132,7 +135,7 @@ if  isequal(cfg.taper, 'dpss')
   cfg = ft_checkopt(cfg,'tapsmofrq',{'doublevector', 'doublescalar'});
 end
 
-cfg = ft_checkconfig(cfg, 'allowed', {'taper', 'borderspikes', 't_ftimwin', 'foi', 'spikechannel', 'channel', 'taperopt', 'rejectsaturation','tapsmofrq', 'warning'});
+cfg = ft_checkconfig(cfg, 'allowed', {'taper', 'borderspikes', 't_ftimwin', 'foi', 'spikechannel', 'channel', 'taperopt', 'rejectsaturation','tapsmofrq', 'latency' 'warning'});
 
 % length of tapsmofrq, foi and t_ftimwin should all be matched
 if isfield(cfg,'tapsmofrq')
@@ -225,6 +228,10 @@ for iTrial = 1:nTrials
     ts         = spike.time{unitindx}(hasTrial); % get the spike times for these spikes
     vld        = ts>=timeBins(1) & ts<=timeBins(end); % only select those spikes that fall in the trial window
     ts         = ts(vld); % timestamps for these spikes
+	 if ~isempty(cfg.latency)
+		 idx = ts>=cfg.latency(1) & ts<=cfg.latency(2);
+		 ts = ts(idx);
+	 end
     [ignore,I] = histc(ts,timeBins);    
     if ~isempty(ts)
       ts(I==0 | I==length(timeBins)) = [];
