@@ -71,7 +71,7 @@ elseif size(trl,1)~=ntrial
   warning_once('the trial definition in the configuration is inconsistent with the actual data');
   trl = [];
 elseif nsmp~=(trl(:,2)-trl(:,1)+1)
-  warning_once('the trial definition in the configuration is inconsistent with the actual data');
+  %warning_once('the trial definition in the configuration is inconsistent with the actual data');
   trl = [];
 end
 
