@@ -13,7 +13,8 @@ function [timelock] = ft_spiketriggeredaverage(cfg, data)
 %   cfg.spikechannel = string, name of single spike channel to trigger on
 %   cfg.channel      = Nx1 cell-array with selection of channels (default = 'all'),
 %                      see FT_CHANNELSELECTION for details
-%   cfg.latency 
+%   cfg.latency      = [begin end] time window to select the spikes for analysis, note this could
+%                      select cfg.latency±cfg.timwin of LFP data
 %   cfg.keeptrials   = 'yes' or 'no', return individual trials or average (default = 'no')
 %   cfg.feedback     = 'no', 'text', 'textbar', 'gui' (default = 'no')
 
@@ -135,7 +136,8 @@ if (cfg.latency(2) > max(endTrialLatency)), cfg.latency(2) = max(endTrialLatency
   warning('correcting end latency of averaging window');
 end
 cfgSelect = [];
-cfgSelect.latency = cfg.latency;
+cfgSelect.latency(1) = cfg.latency(1) + cfg.timwin(1);
+cfgSelect.latency(2) = cfg.latency(2) + cfg.timwin(2);
 if length(cfg.trials)~=length(data.trial), cfgSelect.trials  = cfg.trials; end
 data = ft_selectdata(cfgSelect,data);
 ntrial = length(data.trial);
@@ -156,6 +158,9 @@ cumcnt = zeros(nchansel, numsmp);
 
 for i=1:ntrial
   spikesmp = find(data.trial{i}(spikesel,:));
+  spiket = data.time{i}(spikesmp); %the times for each spike
+  spikesmp = spikesmp(spiket >= cfg.latency(1) & spiket <=cfg.latency(2)); %choose spikes within latency window
+  spikesmp = spikesmp(:);
   spikecnt = data.trial{i}(spikesel,spikesmp);
   
   if any(spikecnt>5) || any(spikecnt<0)
@@ -174,8 +179,9 @@ for i=1:ntrial
   end
   spikesmp(sel) = [];                     % remove the double spikes
   spikecnt(sel) = [];                     % remove the double spikes
-  spikesmp = [spikesmp tmp];              % add the double spikes as replicated single spikes
-  spikecnt = [spikecnt ones(size(tmp))];  % add the double spikes as replicated single spikes
+  tmp = tmp(:);									% convert to rows, same as spikesmp
+  spikesmp = [spikesmp; tmp];              % add the double spikes as replicated single spikes
+  spikecnt = [spikecnt ones(1, size(tmp, 1))];  % add the double spikes as replicated single spikes
   spikesmp = sort(spikesmp);              % sort them to keep the original ordering (not needed on spikecnt, since that is all ones)
   
   spiketime{i}  = data.time{i}(spikesmp);
