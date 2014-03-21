@@ -96,6 +96,7 @@ cfg.feedback     = ft_getopt(cfg,'feedback', 'no');
 cfg.tapsmofrq    = ft_getopt(cfg,'tapsmofrq', 4);
 cfg.taper        = ft_getopt(cfg,'taper', 'hanning');
 cfg.foilim       = ft_getopt(cfg,'foilim', [0 150]);
+cfg.latency			 = ft_getopt(cfg, 'latency',[]);
 
 % ensure that the options are valid
 cfg = ft_checkopt(cfg,'timwin','doublevector');
@@ -105,6 +106,7 @@ cfg = ft_checkopt(cfg,'feedback', 'char', {'yes', 'no'});
 cfg = ft_checkopt(cfg,'taper', 'char');
 cfg = ft_checkopt(cfg,'tapsmofrq', 'doublescalar');
 cfg = ft_checkopt(cfg,'foilim', 'doublevector');
+cfg = ft_checkopt(cfg, 'latency', {'doublevector','empty'});
 
 if strcmp(cfg.taper, 'sine')
   error('sorry, sine taper is not yet implemented');
@@ -205,7 +207,11 @@ for iUnit  = 1:nspikesel
     hasTrial = spike.trial{spikesel(iUnit)} == iTrial; % find the spikes that are in the trial
     ts       = spike.time{spikesel(iUnit)}(hasTrial); % get the spike times for these spikes
     ts       = ts(ts>=timeBins(1) & ts<=timeBins(end)); % only select those spikes that fall in the trial window
-    [ignore,spikesmp] = histc(ts,timeBins);      
+    if ~isempty(cfg.latency) && length(cfg.latency) == 2
+		 idx = ts>=cfg.latency(1) & ts<=cfg.latency(2);
+		 ts = ts(idx);
+	 end
+	 [ignore,spikesmp] = histc(ts,timeBins);      
     if ~isempty(ts)
       ts(spikesmp==0 | spikesmp==length(timeBins)) = [];
     end

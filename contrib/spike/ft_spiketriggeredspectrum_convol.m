@@ -30,7 +30,7 @@ function [sts] = ft_spiketriggeredspectrum_convol(cfg, data, spike)
 %                           multi-tapering. Note that 4 Hz smoothing means
 %                           plus-minus 4 Hz, i.e. a 8 Hz smoothing box.
 %     cfg.foi             = vector 1 x numfoi, frequencies of interest
-%     cfg.latency
+%     cfg.latency         = time to select spikes
 %     cfg.taper           = 'dpss', 'hanning' or many others, see WINDOW (default = 'dpss')
 %     cfg.t_ftimwin       = vector 1 x numfoi, length of time window (in
 %     seconds)
@@ -113,15 +113,14 @@ cfg = ft_checkconfig(cfg, 'required', {'foi','t_ftimwin'});
 % get the options
 cfg.borderspikes   = ft_getopt(cfg, 'borderspikes','yes');
 cfg.taper          = ft_getopt(cfg, 'taper','hanning');
-cfg.latency			 = ft_getopt(cfg, 'latency',[]);
 cfg.taperopt       = ft_getopt(cfg, 'taperopt',[]);
 cfg.spikechannel   = ft_getopt(cfg,'spikechannel', 'all');
 cfg.channel        = ft_getopt(cfg,'channel', 'all');
 cfg.rejectsaturation  = ft_getopt(cfg,'rejectsaturation', 'yes');
+cfg.latency			 = ft_getopt(cfg, 'latency',[]);
 
 % ensure that the options are valid
 cfg = ft_checkopt(cfg, 'taper',{'char', 'function_handle'});
-cfg = ft_checkopt(cfg, 'latency', {'doublevector','empty'});
 cfg = ft_checkopt(cfg, 'borderspikes','char',{'yes', 'no'});
 cfg = ft_checkopt(cfg, 't_ftimwin',{'doublevector', 'doublescalar'});
 cfg = ft_checkopt(cfg, 'foi',{'doublevector', 'doublescalar'});
@@ -129,6 +128,7 @@ cfg = ft_checkopt(cfg, 'spikechannel',{'cell', 'char', 'double'});
 cfg = ft_checkopt(cfg, 'channel', {'cell', 'char', 'double'});
 cfg = ft_checkopt(cfg, 'taperopt', {'double','empty'});
 cfg = ft_checkopt(cfg, 'rejectsaturation','char', {'yes', 'no'});
+cfg = ft_checkopt(cfg, 'latency', {'doublevector','empty'});
 
 if  isequal(cfg.taper, 'dpss')
   cfg = ft_checkconfig(cfg, 'required', {'tapsmofrq'});
