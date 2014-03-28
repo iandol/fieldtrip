@@ -18,7 +18,7 @@ function [data] = ft_spiketriggeredinterpolation(cfg, data)
 %   cfg.timwin       = [begin end], duration of LFP segment around each spike (default =
 %                      [-0.005 0.005]) to be removed
 %   cfg.interptoi    = value, time in seconds used for interpolation, which
-%                      must be larger than timwin (default = 0.01)
+%                      must be larger than timwin (default = 0.2)
 %   cfg.spikechannel = string, name of single spike channel to trigger on
 %   cfg.channel      = Nx1 cell-array with selection of channels (default = 'all'),
 %                      see FT_CHANNELSELECTION for details
