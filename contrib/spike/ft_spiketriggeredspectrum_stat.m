@@ -390,7 +390,8 @@ ft_progress('close');
 outparam        = cfg.method;
 freq.(outparam) = permute(out,[2 3 1]);
 freq.nspikes    = permute(nSpikes,[2 3 1]);    % also cross-unit purposes
-freq.labelcmb = cell(nChans,2);
+freq.time       = spike.time;
+freq.labelcmb   = cell(nChans,2);
 freq.labelcmb(1:nChans,1) = cfg.spikechannel;
 for iCmb = 1:nChans
   freq.labelcmb{iCmb,2}   = outlabels{iCmb}; 

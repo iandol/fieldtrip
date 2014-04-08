@@ -207,7 +207,7 @@ for iUnit  = 1:nspikesel
     hasTrial = spike.trial{spikesel(iUnit)} == iTrial; % find the spikes that are in the trial
     ts       = spike.time{spikesel(iUnit)}(hasTrial); % get the spike times for these spikes
     ts       = ts(ts>=timeBins(1) & ts<=timeBins(end)); % only select those spikes that fall in the trial window
-    if ~isempty(cfg.latency) && length(cfg.latency) == 2
+    if ~isempty(ts) && ~isempty(cfg.latency) && length(cfg.latency) == 2
 		 idx = ts>=cfg.latency(1) & ts<=cfg.latency(2);
 		 ts = ts(idx);
 	 end
