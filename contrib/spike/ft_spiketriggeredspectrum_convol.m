@@ -217,6 +217,11 @@ end
 
 % compute the spectra
 ft_progress('init', 'text',     'Please wait...');
+if isfield(spike,'trialidx')
+	trialidx = spike.trialidx;
+else
+	trialidx = 1:nTrials;
+end
 for iTrial = 1:nTrials
   
   % select the spike times for a given trial and restrict to those overlapping with the EEG  
@@ -224,7 +229,7 @@ for iTrial = 1:nTrials
   timeBins   = [x x(end)+1/data.fsample] - (0.5/data.fsample);      
   for iUnit = 1:nspikesel
     unitindx   = spikesel(iUnit);
-    hasTrial   = spike.trial{unitindx} == iTrial; % find the spikes that are in the trial
+    hasTrial   = spike.trial{unitindx} == trialidx(iTrial); % find the spikes that are in the trial
     ts         = spike.time{unitindx}(hasTrial); % get the spike times for these spikes
     vld        = ts>=timeBins(1) & ts<=timeBins(end); % only select those spikes that fall in the trial window
     ts         = ts(vld); % timestamps for these spikes

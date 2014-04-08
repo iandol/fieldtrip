@@ -172,10 +172,10 @@ end
 taper  = sparse(diag(taper));
 
 % preallocate the output structures for different units / trials
-ntrial      = length(data.trial);
-spectrum    = cell(nspikesel,ntrial);
-spiketime   = cell(nspikesel,ntrial);
-spiketrial  = cell(nspikesel,ntrial);
+nTrials      = length(data.trial);
+spectrum    = cell(nspikesel,nTrials);
+spiketime   = cell(nspikesel,nTrials);
+spiketrial  = cell(nspikesel,nTrials);
 
 % select the frequencies
 freqaxis = linspace(0, data.fsample, numsmp);
@@ -195,23 +195,30 @@ spike_fft = spike_fft(fbeg:fend);
 spike_fft = spike_fft./abs(spike_fft);
 rephase   = sparse(diag(conj(spike_fft)));
 
+% this is actually a trial selection, use index
+if isfield(spike,'trialidx')
+	trialidx = spike.trialidx;
+else
+	trialidx = 1:nTrials;
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % compute the spectra
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ft_progress('init', 'text',     'Please wait...');
 for iUnit  = 1:nspikesel
-  for iTrial = 1:ntrial
-
+  for iTrial = 1:nTrials
+	  
     % select the spikes that fell in the trial and convert to samples
     timeBins = [data.time{iTrial}  data.time{iTrial}(end)+1/data.fsample] - (0.5/data.fsample);      
-    hasTrial = spike.trial{spikesel(iUnit)} == iTrial; % find the spikes that are in the trial
+    hasTrial = spike.trial{spikesel(iUnit)} == trialidx(iTrial); % find the spikes that are in the trial
     ts       = spike.time{spikesel(iUnit)}(hasTrial); % get the spike times for these spikes
     ts       = ts(ts>=timeBins(1) & ts<=timeBins(end)); % only select those spikes that fall in the trial window
     if ~isempty(ts) && ~isempty(cfg.latency) && length(cfg.latency) == 2
 		 idx = ts>=cfg.latency(1) & ts<=cfg.latency(2);
 		 ts = ts(idx);
 	 end
-	 [ignore,spikesmp] = histc(ts,timeBins);      
+	 [~,spikesmp] = histc(ts,timeBins);      
     if ~isempty(ts)
       ts(spikesmp==0 | spikesmp==length(timeBins)) = [];
     end
@@ -228,7 +235,7 @@ for iUnit  = 1:nspikesel
     spectrum{iUnit, iTrial} = zeros(length(spikesmp), nchansel, fend-fbeg+1);
     
     % compute the spiketriggered spectrum
-    ft_progress(iTrial/ntrial, 'spectrally decomposing data for trial %d of %d, %d spikes for unit %d', iTrial, ntrial, length(spikesmp), iUnit);  
+    ft_progress(iTrial/nTrials, 'spectrally decomposing data for trial %d of %d, %d spikes for unit %d', iTrial, nTrials, length(spikesmp), iUnit);  
     for j=1:length(spikesmp)
       
       % selected samples
@@ -293,10 +300,10 @@ function [spikelabel, eeglabel] = detectspikechan(data)
 maxRate = 1000; % default on what we still consider a neuronal signal
 
 % autodetect the spike channels
-ntrial = length(data.trial);
+nTrials = length(data.trial);
 nchans  = length(data.label);
 spikechan = zeros(nchans,1);
-for i=1:ntrial
+for i=1:nTrials
   for j=1:nchans
     hasAllInts    = all(isnan(data.trial{i}(j,:)) | data.trial{i}(j,:) == round(data.trial{i}(j,:)));
     hasAllPosInts = all(isnan(data.trial{i}(j,:)) | data.trial{i}(j,:)>=0);
@@ -304,7 +311,7 @@ for i=1:ntrial
     spikechan(j) = spikechan(j) + double(hasAllInts & hasAllPosInts & fr<=maxRate);
   end
 end
-spikechan = (spikechan==ntrial);
+spikechan = (spikechan==nTrials);
 
 spikelabel = data.label(spikechan);
 eeglabel   = data.label(~spikechan);
