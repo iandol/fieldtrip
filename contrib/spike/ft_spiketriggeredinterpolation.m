@@ -121,7 +121,7 @@ interppad = round( cfg.interptoi*data.fsample);
 for i=1:ntrial
   spikesmp = find(data.trial{i}(spikesel,:));
   
-  fprintf('processing trial %d of %d (%d spikes)\n', i, ntrial, length(spikesmp));
+  fprintf('Spike Triggered Interpolation: processing trial %d of %d (%d spikes)\n', i, ntrial, length(spikesmp));
   
   ft_progress('init', cfg.feedback, 'interpolating spikes');
   for j=1:length(spikesmp)

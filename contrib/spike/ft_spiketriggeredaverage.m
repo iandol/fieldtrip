@@ -186,7 +186,7 @@ for i=1:ntrial
   
   spiketime{i}  = data.time{i}(spikesmp);
   spiketrial{i} = i*ones(size(spikesmp));
-  fprintf('processing trial %d of %d (%d spikes)\n', i, ntrial, sum(spikecnt));
+  fprintf('Spike Triggered Average: processing trial %d of %d (%d spikes)\n', i, ntrial, sum(spikecnt));
   
   if strcmp(cfg.keeptrials, 'yes')
     if any(spikecnt>1)
@@ -198,7 +198,7 @@ for i=1:ntrial
   
   ft_progress('init', cfg.feedback, 'averaging spikes');
   for j=1:length(spikesmp)
-    ft_progress(i/ntrial, 'averaging spike %d of %d\n', j, length(spikesmp));
+    ft_progress(i/ntrial, 'STA averaging spike %d of %d\n', j, length(spikesmp));
     begsmp = spikesmp(j) + begpad;
     endsmp = spikesmp(j) + endpad;
     
@@ -213,7 +213,7 @@ for i=1:ntrial
     else
       segment = data.trial{i}(chansel,begsmp:endsmp);
       segmentMean = repmat(nanmean(segment,2),1,numsmp); % nChan x Numsmp
-      segment     = segment - segmentMean; % LFP has average of zero now (no DC)         
+      segment     = segment - segmentMean; % LFP has average of zero now (no DC)       
     end
     if strcmp(cfg.keeptrials, 'yes')
       singletrial{i}(j,:,:) = segment;
@@ -240,7 +240,7 @@ if (strcmp(cfg.keeptrials, 'yes'))
   % concatenate all the single spike snippets
   timelock.trial     = cat(1, singletrial{:});
   timelock.origtime  = cat(2,spiketime{:})';  % this deviates from the standard output, but is included for reference
-  timelock.origtrial = cat(2,spiketrial{:})'; % this deviates from the standard output, but is included for referenc  
+  timelock.origtrial = cat(1,spiketrial{:}); % this deviates from the standard output, but is included for referenc  
 else
   timelock.dimord = 'chan_time';
 end
