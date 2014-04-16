@@ -137,11 +137,10 @@ if (cfg.latency(2) > max(endTrialLatency)), cfg.latency(2) = max(endTrialLatency
 end
 
 cfgSelect = [];
-cfgSelect.latency(1) = cfg.latency(1) + cfg.timwin(1);
-cfgSelect.latency(2) = cfg.latency(2) + cfg.timwin(2);
+%cfgSelect.latency(1) = cfg.latency(1) + cfg.timwin(1);
+%cfgSelect.latency(2) = cfg.latency(2) + cfg.timwin(2);
 if length(cfg.trials)~=length(data.trial), cfgSelect.trials  = cfg.trials; end
-
-data = ft_selectdata(cfgSelect,data);
+if ~isempty(cfgSelect); data = ft_selectdata(cfgSelect,data); end
 ntrial = length(data.trial);
 
 begpad = round(cfg.timwin(1)*data.fsample);
@@ -235,6 +234,7 @@ end % for each trial
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 timelock.time  = offset2time(begpad, data.fsample, numsmp);
 timelock.avg   = cumsum ./ cumcnt;
+timelock.dof   = cumcnt;
 timelock.label = data.label(chansel);
 
 if (strcmp(cfg.keeptrials, 'yes'))
@@ -242,7 +242,8 @@ if (strcmp(cfg.keeptrials, 'yes'))
   % concatenate all the single spike snippets
   timelock.trial     = cat(1, singletrial{:});
   timelock.origtime  = cat(2,spiketime{:})';  % this deviates from the standard output, but is included for reference
-  timelock.origtrial = cat(1,spiketrial{:}); % this deviates from the standard output, but is included for referenc  
+  timelock.origtrial = cat(1,spiketrial{:}); % this deviates from the standard output, but is included for reference
+  timelock.var = squeeze(var(timelock.trial));
 else
   timelock.dimord = 'chan_time';
 end
