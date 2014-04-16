@@ -184,21 +184,8 @@ if ~compiled
       matlabcmd = 'matlab78';
     elseif matlabversion(7.9) % 2009b
       matlabcmd = 'matlab79';
-    elseif matlabversion('2010a')
-      matlabcmd = 'matlab2010a';
-    elseif matlabversion('2010b')
-      matlabcmd = 'matlab2010b';
-    elseif matlabversion('2011a')
-      matlabcmd = 'matlab2011a';
-    elseif matlabversion('2011b')
-      matlabcmd = 'matlab2011b';
-    elseif matlabversion('2012a')
-      matlabcmd = 'matlab2012a';
-    elseif matlabversion('2012b')
-      matlabcmd = 'matlab2012b';
     else
-      % use whatever is available as default
-      matlabcmd = 'matlab';
+      matlabcmd = sprintf('matlab%s', version('-release')); % the version command returns a string like '2014a'
     end
     
     if system(sprintf('which %s > /dev/null', matlabcmd))==1
@@ -483,8 +470,12 @@ switch backend
     pbsid_beg = strfind(result, '<');
     pbsid_end = strfind(result, '>');
     result = result(pbsid_beg(1)+1:pbsid_end(1)-1);
+  case 'sge'
+    % in sge, the return string is "Your job <job_number> (<job_name>) has been submitted"
+    result_words = strsplit(result);
+    result = result_words{3};
   otherwise
-    % for torque and sge it is enough to remove the white space
+    % for torque, it is enough to remove the white space
     result = strtrim(result);
 end
 

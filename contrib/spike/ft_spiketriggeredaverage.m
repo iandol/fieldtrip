@@ -135,10 +135,12 @@ end
 if (cfg.latency(2) > max(endTrialLatency)), cfg.latency(2) = max(endTrialLatency);
   warning('correcting end latency of averaging window');
 end
+
 cfgSelect = [];
 cfgSelect.latency(1) = cfg.latency(1) + cfg.timwin(1);
 cfgSelect.latency(2) = cfg.latency(2) + cfg.timwin(2);
 if length(cfg.trials)~=length(data.trial), cfgSelect.trials  = cfg.trials; end
+
 data = ft_selectdata(cfgSelect,data);
 ntrial = length(data.trial);
 

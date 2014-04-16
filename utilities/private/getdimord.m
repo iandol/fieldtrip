@@ -1,4 +1,4 @@
-function dimord = getdimord(data, field)
+function dimord = getdimord(data, field, varargin)
 
 % GETDIMORD
 %
@@ -7,12 +7,13 @@ function dimord = getdimord(data, field)
 %
 % See also GETDIMSIZ
 
+
 if ~isfield(data, field)
   error('field "%s" not present in data', field);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OPTION 1: the specific dimord is simply present
+% ATTEMPT 1: the specific dimord is simply present
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isfield(data, [field 'dimord'])
@@ -28,27 +29,49 @@ ntime     = inf;
 nfreq     = inf;
 nchan     = inf;
 nchancmb  = inf;
-nrpt      = nan; 
+nrpt      = nan;
 nrpttap   = nan;
 npos      = inf;
+nori      = nan; % this will be 3 in many cases
 ntopochan = inf;
+nspike    = inf; % this is only for the first spike channel
+
+% use an anonymous function
+assign = @(var, val) assignin('caller', var, val);
+% it is possible to pass additional ATTEMPTs such as nrpt, nrpttap, etc
+for i=1:2:length(varargin)
+  assign(varargin{i}, varargin{i+1});
+end
 
 % try to determine the size of each possible dimension in the data
 if isfield(data, 'label')
   nchan = length(data.label);
 end
+
 if isfield(data, 'labelcmb')
   nchancmb = size(data.labelcmb, 1);
 end
+
 if isfield(data, 'time')
-  ntime = length(data.time);
+  if iscell(data.time) && ~isempty(data.time)
+    ntime = length(data.time{1}); % raw data: only for the first trial
+  else
+    ntime = length(data.time);
+  end
 end
+
 if isfield(data, 'freq')
   nfreq = length(data.freq);
 end
-if isfield(data, 'trial') && iscell(data.trial)
+
+if isfield(data, 'trial') && ft_datatype(data, 'raw')
   nrpt = length(data.trial);
 end
+
+if isfield(data, 'trialtime') && ft_datatype(data, 'spike')
+  nrpt = size(data.trialtime,1);
+end
+
 if isfield(data, 'cumtapcnt')
   nrpt = size(data.cumtapcnt,1);
   if numel(data.cumtapcnt)==length(data.cumtapcnt)
@@ -66,21 +89,36 @@ if isfield(data, 'cumtapcnt')
     end
   end
 end
+
 if isfield(data, 'pos')
   npos = size(data.pos,1);
 end
+
+if isfield(data, 'csdlabel')
+  % this is used in PCC beamformers
+  nori = length(data.csdlabel);
+elseif isfinite(npos)
+  % assume that there are three dipole orientations per source
+  nori = 3;
+end
+
 if isfield(data, 'topolabel')
+  % this is used in ICA and PCA decompositions
   ntopochan = length(data.topolabel);
+end
+
+if isfield(data, 'timestamp') && iscell(data.timestamp)
+  nspike = length(data.timestamp{1}); % spike data: only for the first channel
 end
 
 % determine the size of the actual data
 datsiz = getdimsiz(data, field);
 
-tok = {'rpt' 'rpttap' 'chan' 'chancmb' 'freq' 'time' 'pos' 'topochan'};
-siz = [nrpt nrpttap nchan nchancmb nfreq ntime npos ntopochan];
+tok = {'rpt' 'rpttap' 'chan' 'chancmb' 'freq' 'time' 'pos' 'ori' 'topochan'};
+siz = [nrpt nrpttap nchan nchancmb nfreq ntime npos nori ntopochan];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OPTION 2: a general dimord is present and might apply
+% ATTEMPT 2: a general dimord is present and might apply
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isfield(data, 'dimord')
@@ -105,7 +143,7 @@ if isfield(data, 'dimord')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OPTION 3: look at the size of some common fields that are known
+% ATTEMPT 3: look at the size of some common fields that are known
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 switch field
@@ -146,21 +184,72 @@ switch field
       dimord = 'chan_chan_freq';
     end
     
-  case {'cov'}
+  case {'cov' 'coh' 'csd' 'noisecov' 'noisecsd'}
+    % these occur in timelock and in source structures
     if isequalwithoutnans(datsiz, [nrpt nchan nchan])
       dimord = 'rpt_chan_chan';
     elseif isequalwithoutnans(datsiz, [nchan nchan])
       dimord = 'chan_chan';
+    elseif isequalwithoutnans(datsiz, [npos nori nori])
+      if iscell(data.(field))
+        dimord = '{pos}_ori_ori';
+      else
+        dimord = 'pos_ori_ori';
+      end
+    elseif isequalwithoutnans(datsiz, [npos nrpt nori nori])
+      if iscell(data.(field))
+        dimord = '{pos}_rpt_ori_ori';
+      else
+        dimord = 'pos_rpt_ori_ori';
+      end
+    end
+    
+  case {'pow'}
+    if isequalwithoutnans(datsiz, [npos ntime])
+      if iscell(data.(field))
+        dimord = '{pos}_time';
+      else
+        dimord = 'pos_time';
+      end
+    elseif isequalwithoutnans(datsiz, [npos nrpt])
+      if iscell(data.(field))
+        dimord = '{pos}_rpt';
+      else
+        dimord = 'pos_rpt';
+      end
+    end
+    
+  case {'mom'}
+    if isequalwithoutnans(datsiz, [npos nori ntime])
+      if iscell(data.(field))
+        dimord = '{pos}_ori_time';
+      else
+        dimord = 'pos_ori_time';
+      end
+    elseif isequalwithoutnans(datsiz, [npos nori nrpt])
+      if iscell(data.(field))
+        dimord = '{pos}_ori_rpt';
+      else
+        dimord = 'pos_ori_rpt';
+      end
+    elseif isequalwithoutnans(datsiz, [npos ntime])
+      if iscell(data.(field))
+        dimord = '{pos}_time';
+      else
+        dimord = 'pos_time';
+      end
     end
     
   case {'trial'}
-    if iscell(data.trial)
-      dimord = '{rpt}_chan_time';
-    elseif isequalwithoutnans(datsiz, [nrpt nchan ntime])
+    if ~iscell(data.(field)) && isequalwithoutnans(datsiz, [nrpt nchan ntime])
       dimord = 'rpt_chan_time';
+    elseif isequalwithoutnans(datsiz, [nrpt nchan ntime])
+      dimord = '{rpt}_chan_time';
+    elseif isequalwithoutnans(datsiz, [nchan nspike]) || isequalwithoutnans(datsiz, [nchan 1 nspike])
+      dimord = '{chan}_spike';
     end
     
-  case {'sampleinfo' 'trialinfo'}
+  case {'sampleinfo' 'trialinfo' 'trialtime'}
     if isequalwithoutnans(datsiz, [nrpt nan])
       dimord = 'rpt_unknown';
     end
@@ -169,7 +258,7 @@ switch field
     if isequalwithoutnans(datsiz, [nrpt nan])
       dimord = 'rpt_unknown';
     end
-        
+    
   case {'topo'}
     if isequalwithoutnans(datsiz, [ntopochan nchan])
       dimord = 'topochan_chan';
@@ -179,41 +268,66 @@ switch field
     if isequalwithoutnans(datsiz, [nchan ntopochan])
       dimord = 'chan_topochan';
     end
-
+    
   case {'inside'}
     if isequalwithoutnans(datsiz, [npos])
       dimord = 'pos';
     end
     
-  otherwise
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % OPTION 4: compare the size with the known size of each dimension
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    if length(unique(siz(~isnan(siz))))==length(siz(~isnan(siz)))
-      % this should only be done if there is no chance of confusing dimensions
-      dimtok = cell(size(datsiz));
-      dimtok(datsiz==npos)      = {'pos'};
-      dimtok(datsiz==nrpttap)   = {'rpttap'};
-      dimtok(datsiz==nrpt)      = {'rpt'};
-      dimtok(datsiz==nchancmb)  = {'chancmb'};
-      dimtok(datsiz==nchan)     = {'chan'};
-      dimtok(datsiz==nfreq)     = {'freq'};
-      dimtok(datsiz==ntime)     = {'time'};
-      if all(~cellfun(@isempty, dimtok))
-        if iscell(data.(field))
-          dimtok{1} = ['{' dimtok{1} '}'];
-        end
-        dimord = sprintf('%s_', dimtok{:});
-        dimord = dimord(1:end-1);
-        return
-      end
+  case {'timestamp' 'time'}
+    if ft_datatype(data, 'spike') && iscell(data.(field)) && datsiz(1)==nchan
+      dimord = '{chan}_spike';
+    elseif ft_datatype(data, 'raw') && iscell(data.(field)) && datsiz(1)==nrpt
+      dimord = '{rpt}_time';
+    elseif isvector(data.(field)) && isequal(datsiz, [1 ntime])
+      dimord = 'time';
     end
+
+  case {'freq'}
+    if isvector(data.(field)) && isequal(datsiz, [1 nfreq])
+      dimord = 'freq';
+    end
+
+end % switch field
+
+
+if ~exist('dimord', 'var')
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % ATTEMPT 4: compare the size with the known size of each dimension
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  sel = ~isnan(siz) & ~isinf(siz);
+  % nan means that the value is not known and might remain unknown
+  % inf means that the value is not known and but should be known
+  if length(unique(siz(sel)))==length(siz(sel))
+    % this should only be done if there is no chance of confusing dimensions
+    dimtok = cell(size(datsiz));
+    dimtok(datsiz==npos)      = {'pos'};
+    dimtok(datsiz==nori)      = {'ori'};
+    dimtok(datsiz==nrpttap)   = {'rpttap'};
+    dimtok(datsiz==nrpt)      = {'rpt'};
+    dimtok(datsiz==nchancmb)  = {'chancmb'};
+    dimtok(datsiz==nchan)     = {'chan'};
+    dimtok(datsiz==nfreq)     = {'freq'};
+    dimtok(datsiz==ntime)     = {'time'};
+    
+    if isempty(dimtok{end}) && datsiz(end)==1
+      % remove the unknown trailing singleton dimension
+      dimtok = dimtok(1:end-1);
+    end
+    
+    if all(~cellfun(@isempty, dimtok))
+      if iscell(data.(field))
+        dimtok{1} = ['{' dimtok{1} '}'];
+      end
+      dimord = sprintf('%s_', dimtok{:});
+      dimord = dimord(1:end-1);
+      return
+    end
+  end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% OPTION 5: return "unknown_unknown"
+% ATTEMPT 5: return "unknown_unknown"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if ~exist('dimord', 'var')
   % this should not happen
