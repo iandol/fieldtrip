@@ -516,6 +516,8 @@ else
       nr_items = size(in_str,1);
       ind = 1;
       coil_ind = 1;
+      shape.fid.pnt = [];
+      shape.fid.label = {};
       while ind < nr_items
         if strcmp(in_str{ind},'MEG:x=')
           shape.fid.pnt = [shape.fid.pnt; str2num(strtok(in_str{ind+1},[',','['])) ...
@@ -843,6 +845,21 @@ else
           % FIXME remove vertices that are not in a triangle
           % FIXME add unit
 
+      case 'asa_elc'
+          elec = ft_read_sens(filename);
+          
+          shape.fid.pnt   = elec.chanpos;
+          shape.fid.label = elec.label;
+          
+          npnt = read_asa(filename, 'NumberHeadShapePoints=', '%d');
+          if ~isempty(npnt) && npnt>0
+              origunit = read_asa(filename, 'UnitHeadShapePoints', '%s', 1);
+              pnt  = read_asa(filename, 'HeadShapePoints', '%f', npnt, ':');
+              
+              pnt = scalingfactor(origunit, 'mm')*pnt;
+              
+              shape.pnt = pnt;
+          end
       otherwise
           % try reading it from an electrode of volume conduction model file
           success = false;
