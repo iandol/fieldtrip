@@ -256,7 +256,8 @@ if strcmp(cfg.correctm, 'cluster')
     tmpcfg.computestat    = 'no';   % skip the computation of the statistic
     try
       cfg.clustercritval    = getfield(statfun(tmpcfg, dat, design), 'critval');
-    catch
+	 catch ME
+		getReport(ME)
       disp(lasterr);
       error('could not determine the parametric critical value for clustering');
     end
