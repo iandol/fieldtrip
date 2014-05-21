@@ -108,6 +108,11 @@ ft_preamble debug
 ft_preamble loadvar    varargin
 ft_preamble provenance varargin
 
+% the abort variable is set to true or false in ft_preamble_init
+if abort
+  return
+end
+
 % check if the input cfg is valid for this function
 cfg = ft_checkconfig(cfg, 'unused',     {'cohtargetchannel'});
 cfg = ft_checkconfig(cfg, 'renamedval', {'zlim', 'absmax', 'maxabs'});
@@ -177,6 +182,7 @@ end
 % ensure that the input is correct, also backward compatibility with old data structures:
 dtype = cell(Ndata, 1);
 for i=1:Ndata
+  % check if the input data is valid for this function
   varargin{i} = ft_checkdata(varargin{i}, 'datatype', {'timelock', 'freq'});
   dtype{i}    = ft_datatype(varargin{i});
   

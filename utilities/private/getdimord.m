@@ -54,7 +54,8 @@ end
 
 if isfield(data, 'time')
   if iscell(data.time) && ~isempty(data.time)
-    ntime = length(data.time{1}); % raw data: only for the first trial
+    tmp   = getdimsiz(data, 'time');
+    ntime = tmp(3); % raw data may contain variable length trials
   else
     ntime = length(data.time);
   end
@@ -244,16 +245,34 @@ switch field
       else
         dimord = 'pos_time';
       end
-    elseif isequalwithoutnans(datsiz, [npos nrpt])
+    elseif isequalwithoutnans(datsiz, [npos nfreq])
+      if iscell(data.(field))
+        dimord = '{pos}_freq';
+      else
+        dimord = 'pos_freq';
+      end
+    elseif isequal(datsiz, [npos nrpt]) % only if nrpt is known
       if iscell(data.(field))
         dimord = '{pos}_rpt';
       else
         dimord = 'pos_rpt';
       end
+    elseif isequal(datsiz, [npos 1]) % in case there are no repetitions
+      if iscell(data.(field))
+        dimord = '{pos}';
+      else
+        dimord = 'pos';
+      end
     end
     
   case {'mom'}
-    if isequalwithoutnans(datsiz, [npos nori ntime])
+    if isequalwithoutnans(datsiz, [npos ntime])
+      if iscell(data.(field))
+        dimord = '{pos}_time';
+      else
+        dimord = 'pos_time';
+      end
+    elseif isequalwithoutnans(datsiz, [npos nori ntime])
       if iscell(data.(field))
         dimord = '{pos}_ori_time';
       else
@@ -264,12 +283,6 @@ switch field
         dimord = '{pos}_ori_rpt';
       else
         dimord = 'pos_ori_rpt';
-      end
-    elseif isequalwithoutnans(datsiz, [npos ntime])
-      if iscell(data.(field))
-        dimord = '{pos}_time';
-      else
-        dimord = 'pos_time';
       end
     end
     

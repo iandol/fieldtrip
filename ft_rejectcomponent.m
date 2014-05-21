@@ -64,6 +64,11 @@ ft_preamble trackconfig
 ft_preamble debug
 ft_preamble loadvar comp data
 
+% the abort variable is set to true or false in ft_preamble_init
+if abort
+  return
+end
+
 % set defaults
 cfg.component  = ft_getopt(cfg, 'component',  []);
 cfg.demean     = ft_getopt(cfg, 'demean',    'yes');
@@ -75,6 +80,7 @@ nargin = nargin + exist('comp', 'var');
 nargin = nargin + exist('data', 'var');
 
 if nargin==3
+  % check if the input data is valid for this function
   data    = ft_checkdata(data, 'datatype', 'raw');
   label   = data.label;
   hasdata = 1;

@@ -118,6 +118,11 @@ ft_preamble provenance
 ft_preamble trackconfig
 ft_preamble debug
 
+% the abort variable is set to true or false in ft_preamble_init
+if abort
+  return
+end
+
 % check if the input cfg is valid for this function
 cfg = ft_checkconfig(cfg, 'deprecated', 'mriunits');
 
@@ -637,7 +642,7 @@ if basedonmni
   else
     grid.pos = ft_warp_apply(inv(normalise.initial), ft_warp_apply(normalise.params, mnigrid.pos, 'sn2individual'));
   end
-  if isfield(grid, 'dim')
+  if isfield(mnigrid, 'dim')
     grid.dim     = mnigrid.dim;
   end
   grid.unit    = mnigrid.unit;

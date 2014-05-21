@@ -159,6 +159,11 @@ ft_preamble trackconfig
 ft_preamble debug
 ft_preamble loadvar data
 
+% the abort variable is set to true or false in ft_preamble_init
+if abort
+  return
+end
+
 % return immediately after distributed execution
 if ~isempty(ft_getopt(cfg, 'distribute'))
   return
@@ -238,7 +243,7 @@ if hasdata
   % this is used to convert the data back to timelock later
   convert = ft_datatype(data);
   
-  % the input data must be raw
+  % check if the input data is valid for this function, the input data must be raw
   data = ft_checkdata(data, 'datatype', 'raw', 'hassampleinfo', 'yes');
   
   % check if the input cfg is valid for this function

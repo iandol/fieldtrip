@@ -57,6 +57,9 @@ function [cfg] = ft_topoplotIC(cfg, varargin)
 %                            'title' to place comment as title
 %                            'layout' to place comment as specified for COMNT in layout
 %                            [x y] coordinates
+%   cfg.title              = string or 'auto' or 'off', specify a figure
+%                            title, or use 'component N' (auto) as the
+%                            title
 %
 % The layout defines how the channels are arranged. You can specify the
 % layout in a variety of ways:
@@ -103,6 +106,11 @@ ft_defaults
 ft_preamble init
 ft_preamble provenance
 
+% the abort variable is set to true or false in ft_preamble_init
+if abort
+  return
+end
+
 % make sure figure window titles are labeled appropriately, pass this onto
 % the actual plotting function
 % if we don't specify this, the window will be called 'ft_topoplotTFR',
@@ -117,6 +125,8 @@ end
 
 % check if the input cfg is valid for this function
 cfg = ft_checkconfig(cfg, 'required', 'component');
+
+cfg.title = ft_getopt(cfg, 'title', 'auto');
 
 % FIXME why is this done like this instead of using ft_checkdata?
 % add a dimord
@@ -146,12 +156,22 @@ if nplots>1
     subplot(nxplot, nyplot, i);
     cfg.component = selcomp(i);
     ft_topoplotTFR(cfg, varargin{:});
-    title(['component ' num2str(selcomp(i))]);
+    
+    if strcmp(cfg.title, 'auto')
+      title(['component ' num2str(selcomp(i))]);
+    elseif ~strcmp(cfg.title, 'off')
+      title(cfg.title);
+    end
   end
 else
   cfg.component = selcomp;
   ft_topoplotTFR(cfg, varargin{:});
-  title(['component ' num2str(selcomp)]);
+  
+  if strcmp(cfg.title, 'auto')
+    title(['component ' num2str(selcomp)]);
+  elseif ~strcmp(cfg.title, 'off')
+    title(cfg.title);
+  end
 end
 
 % show the callinfo for all components together
