@@ -214,7 +214,7 @@ for i=1:ntrial
     else
       segment = data.trial{i}(chansel,begsmp:endsmp);
       segmentMean = repmat(nanmean(segment,2),1,numsmp); % nChan x Numsmp
-      segment     = segment - segmentMean; % LFP has average of zero now (no DC)       
+      segment     = segment - segmentMean; % LFP has average of zero now (no DC)         
     end
     if strcmp(cfg.keeptrials, 'yes')
       singletrial{i}(j,:,:) = segment;
