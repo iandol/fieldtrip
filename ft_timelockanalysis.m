@@ -102,7 +102,7 @@ if abort
 end
 
 % check if the input data is valid for this function
-data = ft_checkdata(data, 'datatype', {'raw', 'comp'}, 'feedback', 'yes', 'hassampleinfo', 'yes');
+data = ft_checkdata(data, 'datatype', {'raw+comp', 'raw'}, 'feedback', 'yes', 'hassampleinfo', 'yes');
 
 % check if the input cfg is valid for this function
 cfg = ft_checkconfig(cfg, 'forbidden',  {'normalizecov', 'normalizevar'});
@@ -122,7 +122,10 @@ if ~isfield(cfg, 'preproc'),       cfg.preproc      = [];     end
 
 % select trials of interest
 if ~strcmp(cfg.trials, 'all')
-  data = ft_selectdata(data, 'rpt', cfg.trials);
+  tmpcfg = [];
+  tmpcfg.trials = cfg.trials;
+  data = ft_selectdata(tmpcfg, data);
+  [cfg, data] = rollback_provenance(cfg, data);
 end
 
 ntrial = length(data.trial);
