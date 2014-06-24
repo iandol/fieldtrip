@@ -88,6 +88,9 @@ end
 axmax = axisscale*axmax;
 rbol  = axisscale*rbol;
 
+fprintf('The axes are %g %s long in each direction\n', axmax, unit);
+fprintf('The diameter of the sphere at the origin is %g %s\n', 2*rbol, unit);
+
 if isfield(data, 'coordsys') && ~isempty(data.coordsys)
   label = cell(3,1);
   if length(data.coordsys)==3 && length(intersect(data.coordsys, 'rlasif'))==3
