@@ -487,8 +487,11 @@ elseif filetype_check_extension(filename, '.img')
 elseif filetype_check_extension(filename, '.mnc')
   type = 'minc';
   content = 'MRI image data';
-elseif filetype_check_extension(filename, '.nii')
+elseif filetype_check_extension(filename, '.nii') && filetype_check_header(filename, {[92 1 0 0], [0 0 1 92]}) % header starts with the number 348
   type = 'nifti';
+  content = 'MRI image data';
+elseif filetype_check_extension(filename, '.nii') && filetype_check_header(filename, {[28 2 0 0], [0 0 2 28]}) % header starts with the number 540
+  type = 'nifti2';
   content = 'MRI image data';
   
   % known FSL file types
@@ -1183,6 +1186,10 @@ elseif filetype_check_header(filename, 'ply')
   type = 'ply';
   manufacturer = 'Stanford Triangle Format';
   content = 'three dimensional data from 3D scanners, see http://en.wikipedia.org/wiki/PLY_(file_format)';
+elseif filetype_check_extension(filename, '.csv')
+  type = 'csv';
+  manufacturer = 'Generic';
+  content = 'Comma-separated values, see http://en.wikipedia.org/wiki/Comma-separated_values';
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1190,7 +1197,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if strcmp(type, 'unknown')
-  if ~exist(filename, 'file') || ~exist(filename, 'dir')
+  if ~exist(filename, 'file') && ~exist(filename, 'dir')
     warning('file or directory "%s" does not exist, could not determine fileformat', filename);
   else
     warning('could not determine filetype of %s', filename);

@@ -185,11 +185,11 @@ if ~isequal(feedback, 'no')
       subtype = 'source';
     end
     if isfield(data, 'dim')
-      fprintf('the input is %s data with %d positions on a [%d %d %d] grid\n', subtype, nsource, data.dim(1), data.dim(2), data.dim(3));
+      fprintf('the input is %s data with %d brainordinates on a [%d %d %d] grid\n', subtype, nsource, data.dim(1), data.dim(2), data.dim(3));
     elseif isfield(data, 'tri')
       fprintf('the input is %s data with %d vertex positions and %d triangles\n', subtype, nsource, size(data.tri, 1));
     else
-      fprintf('the input is %s data with %d positions\n', subtype, nsource);
+      fprintf('the input is %s data with %d brainordinates\n', subtype, nsource);
     end
     clear subtype
   elseif isdip
@@ -200,7 +200,11 @@ if ~isequal(feedback, 'no')
     fprintf('the input is freqmvar data\n');
   elseif ischan
     nchan = length(data.label);
-    fprintf('the input is chan data with %d channels\n', nchan);
+    if isfield(data, 'brainordinate')
+      fprintf('the input is parcellated data with %d parcels\n', nchan);
+    else
+      fprintf('the input is chan data with %d channels\n', nchan);
+    end
   end
 end % give feedback
 
@@ -306,6 +310,18 @@ if ~isempty(dtype)
       data = volume2source(data);
       data = ft_datatype_source(data);
       isvolume = 0;
+      issource = 1;
+      okflag = 1;
+    elseif isequal(dtype(iCell), {'volume'}) && ischan
+      data = parcellated2source(data);
+      data = ft_datatype_volume(data);
+      ischan = 0;
+      isvolume = 1;
+      okflag = 1;
+    elseif isequal(dtype(iCell), {'source'}) && ischan
+      data = parcellated2source(data);
+      data = ft_datatype_source(data);
+      ischan = 0;
       issource = 1;
       okflag = 1;
     elseif isequal(dtype(iCell), {'volume'}) && issource
@@ -1678,6 +1694,47 @@ switch fname
   otherwise
     warning('skipping unknown fieldname %s', fname);
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% convert between datatypes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function source = parcellated2source(data)
+if ~isfield(data, 'brainordinate')
+  error('converting parcellated data requires the specification of the brainordinates');
+end
+source = data.brainordinate;
+data   = rmfield(data, 'brainordinate');
+if isfield(data, 'cfg')
+  source.cfg = data.cfg;
+end
+
+fn = fieldnames(data);
+fn = setdiff(fn, {'label', 'time', 'freq', 'hdr', 'cfg', 'grad', 'elec', 'dimord'});
+sel = false(size(fn));
+for i=1:numel(fn)
+  try
+    sel(i) = ismember(getdimord(data, fn{i}), {'chan', 'chan_time', 'chan_freq', 'chan_chan'});
+  end
+end
+parameter = fn(sel);
+
+fn = fieldnames(source);
+sel = false(size(fn));
+for i=1:numel(fn)
+  tmp = source.(fn{i});
+  sel(i) = iscell(tmp) && isequal(tmp(:), data.label(:));
+end
+parcelparam = fn(sel);
+if numel(parcelparam)~=1
+  error('cannot determine which parcellation to use');
+else
+  parcelparam = parcelparam{1}(1:(end-5)); % minus the 'label'
+end
+
+for i=1:numel(parameter)
+  source.(parameter{i}) = unparcellate(data, data.brainordinate, parameter{i}, parcelparam);
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % convert between datatypes

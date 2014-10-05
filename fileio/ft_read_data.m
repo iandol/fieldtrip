@@ -1187,7 +1187,7 @@ switch dataformat
      filename  = fullfile(p, [f, '.mb2']);
      trlind = [];
      if isfield(hdr.orig, 'epochs') && ~isempty(hdr.orig.epochs)
-         for i = 1:hdr.nTrials
+         for i = 1:numel(hdr.orig.epochs)
              trlind = [trlind i*ones(1, diff(hdr.orig.epochs(i).samples) + 1)];
          end
          if checkboundary && (trlind(begsample)~=trlind(endsample))
@@ -1200,13 +1200,25 @@ switch dataformat
      iEpoch = unique(trlind(begsample:endsample));
      sfid = fopen(filename, 'r');
      dat  = zeros(hdr.nChans, endsample - begsample + 1);
-     for i = 1:length(iEpoch)
+     for i = 1:length(iEpoch)         
          dat(:, trlind(begsample:endsample) == iEpoch(i)) =...
              in_fread_manscan(hdr.orig, sfid, iEpoch(i), ...
-             [sum(trlind==iEpoch(i) & (1:length(trlind))<begsample)...
-             sum(trlind==iEpoch(i) & (1:length(trlind))<endsample)]);
+             [sum(trlind==iEpoch(i) & (1:length(trlind))<begsample) ...
+             sum(trlind==iEpoch(i) & (1:length(trlind))<=endsample)-1]);      
      end   
      dat = dat(chanindx, :);
+  
+  case 'neuroscope_bin'
+    switch hdr.orig.nBits
+      case 16
+        precision = 'int16';
+      case 32
+        precision = 'int32';
+      otherwise
+        error('unknown precision');
+    end
+    dat = LoadBinary(filename, 'frequency', hdr.Fs, 'offset', begsample-1, 'nRecords', endsample-begsample, 'nChannels', hdr.orig.nChannels, 'channels', chanindx, 'precision', precision).'; 
+     
   otherwise
     if strcmp(fallback, 'biosig') && ft_hastoolbox('BIOSIG', 1)
       dat = read_biosig_data(filename, hdr, begsample, endsample, chanindx);

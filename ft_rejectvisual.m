@@ -163,13 +163,16 @@ if ~isfield(cfg, 'metric')
   cfg.metric = 'var';
 end
 
-orgcfg.latency = cfg.latency;
-tmpcfg = [];
+orgcfg = cfg;
 tmpcfg = keepfields(cfg, {'trials'});
 data = ft_selectdata(tmpcfg, data);
 % restore the provenance information
 [cfg, data] = rollback_provenance(cfg, data);
-cfg.latency = orgcfg.latency;% restore the original latency, it should not be 'all'
+cfg = copyfields(orgcfg, cfg, {'channel', 'latency'});
+
+% restore the original latency, it should not be 'all'
+% restore the original channel selection, it is dealt with below
+cfg.channel = orgcfg.channel;
 
 % determine the duration of each trial
 for i=1:length(data.time)

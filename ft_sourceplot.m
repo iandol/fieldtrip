@@ -42,7 +42,7 @@ function ft_sourceplot(cfg, data)
 %
 % The following parameters can be used in all methods:
 %   cfg.downsample    = downsampling for resolution reduction, integer value (default = 1) (orig: from surface)
-%   cfg.atlas         = string, filename of atlas to use (default = []) SEE FT_PREPARE_ATLAS
+%   cfg.atlas         = string, filename of atlas to use (default = []) SEE FT_READ_ATLAS
 %                        for ROI masking (see "masking" below) or in "ortho-plotting" mode (see "ortho-plotting" below)
 %
 % The following parameters can be used for the functional data:
@@ -141,7 +141,7 @@ function ft_sourceplot(cfg, data)
 % corresponding to the input structure.
 %
 % See also FT_SOURCEANALYSIS, FT_SOURCEGRANDAVERAGE, FT_SOURCESTATISTICS,
-% FT_VOLUMELOOKUP, FT_PREPARE_ATLAS, FT_READ_MRI
+% FT_VOLUMELOOKUP, FT_READ_ATLAS, FT_READ_MRI
 
 % TODO have to be built in:
 %   cfg.marker        = [Nx3] array defining N marker positions to display (orig: from sliceinterp)
@@ -949,20 +949,22 @@ elseif isequal(cfg.method,'surface')
     color = repmat(cortex_light, size(surf.pnt,1), 1);
   end
   
-  h1 = patch('Vertices', surf.pnt, 'Faces', surf.tri, 'FaceVertexCData', color , 'FaceColor', 'interp');
+  h1 = patch('Vertices', surf.pnt, 'Faces', surf.tri, 'FaceVertexCData', color, 'FaceColor', 'interp');
   set(h1, 'EdgeColor', 'none');
   axis   off;
   axis vis3d;
   axis equal;
   
-  h2 = patch('Vertices', surf.pnt, 'Faces', surf.tri, 'FaceVertexCData', val , 'FaceColor', 'interp');
-  set(h2, 'EdgeColor', 'none');
-  if hasmsk
-    set(h2, 'FaceVertexAlphaData', maskval);
-    set(h2, 'FaceAlpha',          'interp');
-    set(h2, 'AlphaDataMapping',   'scaled');
-    try
-      alim(gca, [opacmin opacmax]);
+  if hasfun
+    h2 = patch('Vertices', surf.pnt, 'Faces', surf.tri, 'FaceVertexCData', val, 'FaceColor', 'interp');
+    set(h2, 'EdgeColor', 'none');
+    if hasmsk
+      set(h2, 'FaceVertexAlphaData', maskval);
+      set(h2, 'FaceAlpha',          'interp');
+      set(h2, 'AlphaDataMapping',   'scaled');
+      try
+        alim(gca, [opacmin opacmax]);
+      end
     end
   end
   try

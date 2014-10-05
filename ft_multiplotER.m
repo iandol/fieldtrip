@@ -384,11 +384,16 @@ elseif strcmp(dtype, 'freq') && hasrpt,
   dimtok = tokenize(dimord, '_');
 end
 
-% Read or create the layout that will be used for plotting
+% % Read or create the layout that will be used for plotting
 cla
 lay = ft_prepare_layout(cfg, varargin{1});
 cfg.layout = lay;
-ft_plot_lay(lay, 'box', false,'label','no','point','no');
+
+% plot layout
+boxflg     = istrue(cfg.box);
+labelflg   = istrue(cfg.showlabels);
+outlineflg = istrue(cfg.showoutline);
+ft_plot_lay(lay, 'box', boxflg, 'label',labelflg, 'outline', outlineflg, 'point','no', 'mask', 'no');
 
 % Apply baseline correction
 if ~strcmp(cfg.baseline, 'no')
@@ -579,18 +584,6 @@ chanLabels = cell(1,length(Lbl));
 hold on;
 colorLabels = [];
 
-if isfield(lay, 'outline') && strcmp(cfg.showoutline, 'yes')
-  for i=1:length(lay.outline)
-    if ~isempty(lay.outline{i})
-      tmpX = lay.outline{i}(:,1);
-      tmpY = lay.outline{i}(:,2);
-      h = line(tmpX, tmpY);
-      set(h, 'color', 'k');
-      set(h, 'linewidth', 2);
-    end
-  end
-end
-
 % Plot each data set:
 for i=1:Ndata
   % Make vector dat with one value for each channel
@@ -680,7 +673,7 @@ for m=1:length(layLabels)
     label = [];
   end
   
-  ft_plot_vector(xval, yval, 'width', width(m), 'height', height(m), 'hpos', layX(m), 'vpos', layY(m), 'hlim', [xmin xmax], 'vlim', [ymin ymax], 'color', color, 'style', cfg.linestyle{i}, 'linewidth', cfg.linewidth, 'axis', cfg.axes, 'highlight', mask, 'highlightstyle', cfg.maskstyle, 'label', label, 'box', cfg.box);
+  ft_plot_vector(xval, yval, 'width', width(m), 'height', height(m), 'hpos', layX(m), 'vpos', layY(m), 'hlim', [xmin xmax], 'vlim', [ymin ymax], 'color', color, 'style', cfg.linestyle{i}, 'linewidth', cfg.linewidth, 'axis', cfg.axes, 'highlight', mask, 'highlightstyle', cfg.maskstyle, 'label', label, 'box', cfg.box, 'fontsize', cfg.fontsize);
   
   if i==1,
     % Keep ER plot coordinates (at centre of ER plot), and channel labels (will be stored in the figure's UserData struct):
@@ -718,7 +711,7 @@ if isempty(get(gcf, 'Name'))
   end
   
   if isempty(cfg.figurename)
-    set(gcf, 'Name', sprintf('%d: %s: %s', gcf, mfilename, join_str(', ',dataname)));
+    set(gcf, 'Name', sprintf('%d: %s: %s', double(gcf), mfilename, join_str(', ',dataname)));
     set(gcf, 'NumberTitle', 'off');
   else
     set(gcf, 'name', cfg.figurename);
@@ -844,7 +837,6 @@ if ~isempty(label)
     % the reading has already been done and varargin contains the data
     cfg = rmfield(cfg, 'inputfile');
   end
-  cfg.xlim = 'maxmin';
   cfg.channel = label;
   % put data name in here, this cannot be resolved by other means
   info = guidata(gcf);

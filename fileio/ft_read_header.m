@@ -1531,6 +1531,54 @@ switch headerformat
     
     % remember the original header details
     hdr.orig = orig;
+  
+  case 'neuroscope_bin'
+    [p,f,e]    = fileparts(filename);
+    headerfile = fullfile(p,[f,'.xml']);
+    hdr        = ft_read_header(headerfile, 'headerformat', 'neuroscope_xml');
+    
+  case 'neuroscope_ds'
+    listing    = dir(filename);
+    filenames  = {listing.name}';
+    headerfile = filenames{~cellfun('isempty',strfind(filenames,'.xml'))};
+    hdr        = ft_read_header(headerfile, 'headerformat', 'neuroscope_xml');
+  
+  case 'neuroscope_xml'
+    ft_hastoolbox('neuroscope', 1);
+    ft_hastoolbox('gifti', 1);
+    
+    % this pertains to generic header file, and the other neuroscope
+    % formats will recurse into this one
+    [p,f,e]    = fileparts(filename);
+    listing    = dir(p);
+    filenames  = {listing.name}';
+    lfpfile    = filenames{~cellfun('isempty',strfind(filenames,'.eeg'))};
+    rawfile    = filenames{~cellfun('isempty',strfind(filenames,'.dat'))};
+    
+    params     = LoadParameters(filename);
+    
+    hdr         = [];
+    hdr.nChans  = params.nChannels;
+    hdr.nTrials = 1; % is it always continuous? FIXME
+    hdr.nSamplesPre = 0;
+    
+    if ~isempty(lfpfile)
+      % use the sampling of the lfp-file to be leading
+      hdr.Fs       = params.rates.lfp;
+      hdr.nSamples = listing(strcmp(filenames,lfpfile)).bytes./(hdr.nChans*params.nBits/8);
+      hdr.TimeStampPerSample = params.rates.wideband./params.rates.lfp;
+    else
+      % use the sampling of the raw-file to be leading
+      hdr.Fs     = params.rates.wideband;
+      hdr.nSamples = listing(strcmp(filenames,rawfile)).bytes./(hdr.nChans*params.nBits/8);
+      hdr.TimeStampPerSample = 1;
+    end
+    hdr.orig = params;
+    
+    hdr.label = cell(hdr.nChans,1);
+    for k = 1:hdr.nChans
+      hdr.label{k} = ['chan',num2str(k,'%0.3d')];
+    end
     
   case 'neurosim_evolution'
     hdr = read_neurosim_evolution(filename);
@@ -1845,7 +1893,7 @@ switch headerformat
     hdr.nTrials  = 1;
     if isfield(orig, 'epochs') && ~isempty(orig.epochs)
       hdr.nSamples = 0;
-      for i = 1:hdr.nTrials
+      for i = 1:numel(orig.epochs)
         hdr.nSamples =  hdr.nSamples + diff(orig.epochs(i).samples) + 1;
       end
     else
@@ -1893,9 +1941,21 @@ if checkUniqueLabels
   if length(hdr.label)~=length(unique(hdr.label))
     % all channels must have unique names
     warning('all channels must have unique labels, creating unique labels');
+    megflag = ft_chantype(hdr, 'meg');
+    eegflag = ft_chantype(hdr, 'eeg');
     for i=1:hdr.nChans
       sel = find(strcmp(hdr.label{i}, hdr.label));
       if length(sel)>1
+        % there is no need to rename the first instance
+        % can be particularly disruptive when part of standard MEG
+        % or EEG channel set, so should be avoided
+        if any(megflag(sel))
+          sel = setdiff(sel, sel(find(megflag(sel), 1)));
+        elseif any(eegflag(sel))
+          sel = setdiff(sel, sel(find(eegflag(sel), 1)));  
+        else
+          sel = sel(2:end);
+        end
         for j=1:length(sel)
           hdr.label{sel(j)} = sprintf('%s-%d', hdr.label{sel(j)}, j);
         end

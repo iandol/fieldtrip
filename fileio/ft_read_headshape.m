@@ -24,7 +24,7 @@ function [shape] = ft_read_headshape(filename, varargin)
 %
 %   'format'      = string, see below
 %   'coordsys'    = string, e.g. 'head' or 'dewar' (CTF)
-%   'unit'        = string, e.g. 'cm'
+%   'unit'        = string, e.g. 'mm'
 %   'concatenate' = 'no' or 'yes'(default): if you read the shape of left and right hemispehers from multiple files and want to concatenate them
 %
 % Supported input formats are
@@ -164,9 +164,10 @@ if iscell(filename)
       
       shape.hemisphere = []; % keeps track of the order of files in concatenation
       for h = 1:length(bnd)
-        shape.hemisphere = [shape.hemisphere; h*ones(length(bnd(h).pnt), 1)];
+        shape.hemisphere      = [shape.hemisphere; h*ones(length(bnd(h).pnt), 1)];
+        [p,f,e]               = fileparts(filename{h});
+        shape.hemispherelabel{h,1} = f;
       end
-      shape.hemispherelabel = filename(:);
       
     end
   elseif numel(filename)>1 && ~all(haspnt==1)
@@ -276,6 +277,7 @@ else
       end
       shape.pnt = ft_warp_apply(g.mat, g.vertices);
       shape.tri = g.faces;
+      shape.unit = 'mm';  % defined in the GIFTI standard to be milimeter
       if isfield(g, 'cdata')
         shape.mom = g.cdata;
       end
@@ -416,9 +418,13 @@ else
       if isfield(src(1), 'use_tri_area')
         shape.area = [src(1).use_tri_area(:); src(2).use_tri_area(:)];
       end
+      if isfield(src(1), 'use_tri_nn')
+        shape.nn = [src(1).use_tri_nn; src(2).use_tri_nn];
+      end
       shape.orig.pnt = [src(1).rr; src(2).rr];
       shape.orig.tri = [src(1).tris; src(2).tris + src(1).np];
       shape.orig.inuse = [src(1).inuse src(2).inuse]';
+      shape.orig.nn    = [src(1).nn; src(2).nn];
       if isfield(src(1), 'labelindx')
         shape.orig.labelindx = [src(1).labelindx;src(2).labelindx];
         shape.labelindx      = [src(1).labelindx(inuse1); src(2).labelindx(inuse2)];

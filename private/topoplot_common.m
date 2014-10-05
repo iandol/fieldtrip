@@ -525,8 +525,8 @@ end
 % Make vector dat with one value for each channel
 dat    = data.(cfg.parameter);
 % get dimord dimensions
-ydim = find(strcmp(yparam, dimtok{1}));
-xdim = find(strcmp(xparam, dimtok{1}));
+ydim = find(strcmp(yparam, dimtok));
+xdim = find(strcmp(xparam, dimtok));
 zdim = setdiff(1:ndims(dat), [ydim xdim]);
 % and permute
 dat = permute(dat, [zdim(:)' ydim xdim]);
@@ -882,7 +882,7 @@ if isempty(get(gcf, 'Name'))
   end
   
   if isempty(cfg.figurename)
-    set(gcf, 'Name', sprintf('%d: %s: %s', gcf, funcname, join_str(', ',dataname)));
+    set(gcf, 'Name', sprintf('%d: %s: %s', double(gcf), funcname, join_str(', ',dataname)));
     set(gcf, 'NumberTitle', 'off');
   else
     set(gcf, 'name', cfg.figurename);
