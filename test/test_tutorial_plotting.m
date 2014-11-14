@@ -23,7 +23,7 @@ load(dccnpath('/home/common/matlab/fieldtrip/data/ftp/tutorial/plotting/sourceDi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%% Singleplot Functions %%%%%%%%%
-% ft_singeplotER
+% ft_singleplotER
 cfg = [];
 cfg.xlim = [-0.2 1.0];
 cfg.ylim = [-1e-13 3e-13];
@@ -70,7 +70,7 @@ cfg.layout = 'CTF151.lay';
 figure; ft_topoplotTFR(cfg,TFRhann)
 
 % multiple topoplots in one figure
-cfg.xlim = [-0.4:0.2:1.4];
+cfg.xlim = -0.4:0.2:1.4;
 cfg.comment = 'xlim';
 cfg.commentpos = 'title';
 figure; ft_topoplotTFR(cfg,TFRhann)
@@ -106,7 +106,7 @@ cfg.markersize = 12;
 cfg.markercolor = [0 0.69 0.94];
 figure; ft_topoplotTFR(cfg,TFRhann)
 
-%%%%%%%%% Plotting with interactive mode  %%%%%%%%%
+%%%%%%%%% Plotting with interactive mode / multiplots  %%%%%%%%%
 
 cfg = [];
 cfg.baseline = [-0.5 -0.1];
@@ -115,6 +115,35 @@ cfg.baselinetype = 'absolute';
 cfg.layout = 'CTF151.lay';
 cfg.interactive = 'yes';
 figure; ft_multiplotTFR(cfg,TFRhann)
+
+cfg = [];
+cfg.xlim = [-0.2 1.0];
+cfg.ylim = [-1e-13 3e-13];
+cfg.layout = [CTF151.lay];
+cfg.interactive = 'yes';
+figure; ft_multiplotER(cfg,avgFC);
+
+
+%%%%%%%%% Connectivity plots  %%%%%%%%%
+
+cfg = [];
+cfg.covariance = 'yes';
+tmp1 = ft_timelockanalysis(cfg, avgFC);
+
+cfg = [];
+cfg.method = 'corr';
+tmp2 = ft_connectivityanalysis(cfg, tmp1);
+
+cohFC      = tmp2;
+cohFC.coh  = tmp2.corr;
+cohFC.freq = 1;
+cohFC = rmfield(cohFC, 'coh');
+cohFC = rmfield(cohFC, 'time');
+
+cfg = [];
+cfg.foi = 1;
+cfg.layout = 'CTF151.lay';
+figure; ft_topoplotCC(cfg, cohFC);
 
 %%%%%%%%% Cluster plots  %%%%%%%%%
 

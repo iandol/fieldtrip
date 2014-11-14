@@ -50,8 +50,8 @@ function ft_sourceplot(cfg, data)
 %                       'auto', depends structure funparameter, or on funcolorlim
 %                         - funparameter: only positive values, or funcolorlim:'zeromax' -> 'hot'
 %                         - funparameter: only negative values, or funcolorlim:'minzero' -> 'cool'
-%                         - funparameter: both pos and neg values, or funcolorlim:'maxabs' -> 'jet'
-%                         - funcolorlim: [min max] if min & max pos-> 'hot', neg-> 'cool', both-> 'jet'
+%                         - funparameter: both pos and neg values, or funcolorlim:'maxabs' -> 'default'
+%                         - funcolorlim: [min max] if min & max pos-> 'hot', neg-> 'cool', both-> 'default'
 %   cfg.funcolorlim   = color range of the functional data (default = 'auto')
 %                        [min max]
 %                        'maxabs', from -max(abs(funparameter)) to +max(abs(funparameter))
@@ -412,7 +412,7 @@ elseif hasfun
     if isequal(cfg.funcolorlim,'maxabs')
       fcolmin = -max(abs([funmin,funmax]));
       fcolmax =  max(abs([funmin,funmax]));
-      if isequal(cfg.funcolormap,'auto'); cfg.funcolormap = 'jet'; end;
+      if isequal(cfg.funcolormap,'auto'); cfg.funcolormap = 'default'; end;
     elseif isequal(cfg.funcolorlim,'zeromax')
       fcolmin = 0;
       fcolmax = funmax;
@@ -431,7 +431,7 @@ elseif hasfun
     % smart colormap
     if isequal(cfg.funcolormap,'auto')
       if sign(fcolmin) == -1 && sign(fcolmax) == 1
-        cfg.funcolormap = 'jet';
+        cfg.funcolormap = 'default';
       else
         if fcolmin < 0
           cfg.funcolormap = 'cool';
@@ -627,8 +627,8 @@ title(cfg.title);
 
 %%% set color and opacity mapping for this figure
 if hasfun
-  cfg.funcolormap = colormap(cfg.funcolormap);
   colormap(cfg.funcolormap);
+  cfg.funcolormap = colormap;
 end
 if hasmsk
   cfg.opacitymap  = alphamap(cfg.opacitymap);
@@ -1322,8 +1322,7 @@ end
 if opt.hasana
   if opt.init
     tmph  = [h1 h2 h3];
-    tmph(~opt.update) = 0;
-    ft_plot_ortho(opt.ana, 'transform', eye(4), 'location', opt.ijk, 'style', 'subplot', 'parents', tmph, 'doscale', false, 'clim', opt.clim);
+    ft_plot_ortho(opt.ana, 'transform', eye(4), 'location', opt.ijk, 'style', 'subplot', 'parents', tmph, 'update', opt.update, 'doscale', false, 'clim', opt.clim);
     
     opt.anahandles = findobj(opt.handlesfigure, 'type', 'surface')';
     for i=1:length(opt.anahandles)
@@ -1334,7 +1333,7 @@ if opt.hasana
     opt.anahandles = opt.anahandles(:)';
     set(opt.anahandles, 'tag', 'ana');
   else
-    ft_plot_ortho(opt.ana, 'transform', eye(4), 'location', opt.ijk, 'style', 'subplot', 'surfhandle', opt.anahandles.*opt.update, 'doscale', false, 'clim', opt.clim);
+    ft_plot_ortho(opt.ana, 'transform', eye(4), 'location', opt.ijk, 'style', 'subplot', 'surfhandle', opt.anahandles, 'update', opt.update, 'doscale', false, 'clim', opt.clim);
   end
 end
 
@@ -1343,9 +1342,8 @@ if opt.hasfun
     if opt.hasmsk
       tmpqi = [opt.qi 1];
       tmph  = [h1 h2 h3];
-      tmph(~opt.update) = 0;
       ft_plot_ortho(opt.fun(:,:,:,tmpqi(1),tmpqi(2)), 'datmask', opt.msk(:,:,:,tmpqi(1),tmpqi(2)), 'transform', eye(4), 'location', opt.ijk, ...
-        'style', 'subplot', 'parents', tmph, ...
+        'style', 'subplot', 'parents', tmph, 'update', opt.update, ...
         'colormap', opt.funcolormap, 'colorlim', [opt.fcolmin opt.fcolmax], ...
         'opacitylim', [opt.opacmin opt.opacmax]);
       
@@ -1353,9 +1351,8 @@ if opt.hasfun
     else
       tmpqi = [opt.qi 1];
       tmph  = [h1 h2 h3];
-      tmph(~opt.update) = 0;
       ft_plot_ortho(opt.fun(:,:,:,tmpqi(1),tmpqi(2)), 'transform', eye(4), 'location', opt.ijk, ...
-        'style', 'subplot', 'parents', tmph, ...
+        'style', 'subplot', 'parents', tmph, 'update', opt.update, ...
         'colormap', opt.funcolormap, 'colorlim', [opt.fcolmin opt.fcolmax]);
     end
     % after the first call, the handles to the functional surfaces
@@ -1382,17 +1379,15 @@ if opt.hasfun
     if opt.hasmsk
       tmpqi = [opt.qi 1];
       tmph  = opt.funhandles;
-      tmph(~opt.update) = 0;
       ft_plot_ortho(opt.fun(:,:,:,tmpqi(1),tmpqi(2)), 'datmask', opt.msk(:,:,:,tmpqi(1),tmpqi(2)), 'transform', eye(4), 'location', opt.ijk, ...
-        'style', 'subplot', 'surfhandle', tmph, ...
+        'style', 'subplot', 'surfhandle', tmph, 'update', opt.update, ...
         'colormap', opt.funcolormap, 'colorlim', [opt.fcolmin opt.fcolmax], ...
         'opacitylim', [opt.opacmin opt.opacmax]);
     else
       tmpqi = [opt.qi 1];
       tmph  = opt.funhandles;
-      tmph(~opt.update) = 0;
       ft_plot_ortho(opt.fun(:,:,:,tmpqi(1),tmpqi(2)), 'transform', eye(4), 'location', opt.ijk, ...
-        'style', 'subplot', 'surfhandle', tmph, ...
+        'style', 'subplot', 'surfhandle', tmph, 'update', opt.update, ...
         'colormap', opt.funcolormap, 'colorlim', [opt.fcolmin opt.fcolmax]);
     end
   end
