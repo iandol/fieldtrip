@@ -229,11 +229,11 @@ data = ft_selectdata(tmpcfg, data);
 
 % some proper error handling
 if isfield(data, 'trial') && numel(data.trial)==0
-  error('no trials selected.'); % this does not apply for MVAR data
+  error('no trials were selected'); % this does not apply for MVAR data
 end
 
 if numel(data.label)==0
-  error('no channels selected.');
+  error('no channels were selected');
 end
 
 % switch over method and do some of the method specfic checks and defaulting
@@ -374,6 +374,7 @@ end
 chanind    = match_str(data.label, cfg.channel);
 nchan      = size(chanind,1);
 if csdflg
+  assert(nchan>1, 'CSD output requires multiple channels');
   % determine the corresponding indices of all channel combinations
   [dummy,chancmbind(:,1)] = match_str(cfg.channelcmb(:,1), data.label);
   [dummy,chancmbind(:,2)] = match_str(cfg.channelcmb(:,2), data.label);

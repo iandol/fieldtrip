@@ -16,7 +16,7 @@ function [stat, cfg] = ft_statistics_analytic(cfg, dat, design)
 %
 % The configuration can contain
 %   cfg.statistic        = string, statistic to compute for each sample or voxel (see below)
-%   cfg.correctm         = string, apply multiple-comparison correction, 'no', 'bonferroni', 'holm', 'fdr' (default = 'no')
+%   cfg.correctm         = string, apply multiple-comparison correction, 'no', 'bonferroni', 'holm', 'hochberg', 'fdr' (default = 'no')
 %   cfg.alpha            = number, critical value for rejecting the null-hypothesis (default = 0.05)
 %   cfg.tail             = number, -1, 1 or 0 (default = 0)
 %   cfg.ivar             = number or list with indices, independent variable(s)
@@ -110,10 +110,11 @@ else
 		 k = find(pvals > (cfg.alpha ./ ((length(pvals):-1:1)')), 1, 'first'); % compare each significance probability against its individual threshold
 		 if ~isempty(k)
 			 mask = (1:length(pvals))'<k;
+      stat.mask = zeros(size(stat.prob));
 			 stat.mask(indx) = mask;
 		 end
 	  case 'hochberg'
-		 % test the most significatt significance probability against alpha/N, the second largest against alpha/(N-1), etc.
+		 % test the most significant significance probability against alpha/N, the second largest against alpha/(N-1), etc.
 		 fprintf('performing Hochberg''s correction for multiple comparisons (this is *not* the Benjamini-Hochberg FDR procedure!)\n');
 		 fprintf('the returned probabilities are uncorrected, the thresholded mask is corrected\n');
 		 stat.mask = zeros(size(stat.prob));
@@ -121,14 +122,17 @@ else
 		 k = find(pvals <= (cfg.alpha ./ ((length(pvals):-1:1)')), 1, 'last'); % compare each significance probability against its individual threshold
 		  if ~isempty(k)
 			  mask = (1:length(pvals))'<=k;   
+      stat.mask = zeros(size(stat.prob));
 			  stat.mask(indx) = mask;  
 			  end
-	  case 'fdr'
-		 fprintf('performing FDR correction for multiple comparisons\n');
-		 fprintf('the returned probabilities are uncorrected, the thresholded mask is corrected\n');
-		 stat.mask = fdr(stat.prob, cfg.alpha);
-	  otherwise
-		 fprintf('not performing a correction for multiple comparisons\n');
-		 stat.mask = stat.prob<=cfg.alpha;
+    case 'fdr'
+      fprintf('performing FDR correction for multiple comparisons\n');
+      fprintf('the returned probabilities are uncorrected, the thresholded mask is corrected\n');
+      stat.mask = fdr(stat.prob, cfg.alpha);
+    case 'no'
+      fprintf('not performing a correction for multiple comparisons\n');
+      stat.mask = stat.prob<=cfg.alpha;
+    otherwise
+      error('unsupported option "%s" for cfg.correctm', cfg.correctm);
 	end
 end

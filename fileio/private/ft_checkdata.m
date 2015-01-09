@@ -315,13 +315,13 @@ if ~isempty(dtype)
       isvolume = 0;
       issource = 1;
       okflag = 1;
-    elseif isequal(dtype(iCell), {'volume'}) && ischan
+    elseif isequal(dtype(iCell), {'volume'}) && (ischan || istimelock || isfreq)
       data = parcellated2source(data);
       data = ft_datatype_volume(data);
       ischan = 0;
       isvolume = 1;
       okflag = 1;
-    elseif isequal(dtype(iCell), {'source'}) && ischan
+    elseif isequal(dtype(iCell), {'source'}) && (ischan || istimelock || isfreq)
       data = parcellated2source(data);
       data = ft_datatype_source(data);
       ischan = 0;
@@ -798,10 +798,12 @@ end % cmbrepresentation
 
 if issource && ~isempty(sourcerepresentation)
   data = fixsource(data, 'type', sourcerepresentation);
+  data = fixinside(data, inside); % FIXME fixsource reverts the representation to indexed
 end
 
 if issource && ~strcmp(haspow, 'no')
   data = fixsource(data, 'type', sourcerepresentation, 'haspow', haspow);
+  
 end
 
 if isfield(data, 'grad')
@@ -1386,6 +1388,11 @@ if isempty(haspow), haspow = 'no';  end
 fnames = fieldnames(input);
 tmp    = cell2mat(strfind(fnames, 'dimord')); % get dimord like fields
 
+if isfield(input, 'inside') && islogical(input.inside)
+  % the following code expects an indexed representation
+  input = fixinside(input, 'index');
+end
+
 if any(tmp>1)
   current = 'new';
 elseif any(tmp==1)
@@ -1515,7 +1522,7 @@ elseif strcmp(current, 'old') && strcmp(type, 'new'),
       tmp = getfield(stuff, fnames{k});
       siz = size(tmp);
       if isfield(input, 'cumtapcnt') && strcmp(fnames{k}, 'mom')
-        %pcc based mom is orixrpttap
+        %pcc based mom is ori*rpttap
         %tranpose to keep manageable
         for kk = 1:numel(input.inside)
           indx = input.inside(kk);
@@ -1716,7 +1723,8 @@ if isfield(data, 'cfg')
 end
 
 fn = fieldnames(data);
-fn = setdiff(fn, {'label', 'time', 'freq', 'hdr', 'cfg', 'grad', 'elec', 'dimord'});
+fn = setdiff(fn, {'label', 'time', 'freq', 'hdr', 'cfg', 'grad', 'elec', 'dimord'}); % remove irrelevant fields
+fn(~cellfun(@isempty, regexp(fn, 'dimord$'))) = []; % remove irrelevant (dimord) fields
 sel = false(size(fn));
 for i=1:numel(fn)
   try
