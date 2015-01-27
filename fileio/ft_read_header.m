@@ -102,6 +102,41 @@ if isempty(db_blob)
   db_blob = false;
 end
 
+if iscell(filename)
+  % use recursion to read events from multiple files
+  warning_once(sprintf('concatenating header from %d files', numel(filename)));
+  hdr    = cell(size(filename));
+  event  = cell(size(filename));
+  offset = 0;
+  for i=1:numel(filename)
+    hdr{i}   = ft_read_header(filename{i}, varargin{:});
+  end
+  ntrl = nan(size(filename));
+  nsmp = nan(size(filename));
+  for i=1:numel(filename)
+    assert(isequal(hdr{i}.label, hdr{1}.label));
+    assert(isequal(hdr{i}.Fs, hdr{1}.Fs));
+    ntrl(i) = hdr{i}.nTrials;
+    nsmp(i) = hdr{i}.nSamples;
+  end
+  combined      = hdr{1};
+  combined.orig = hdr; % store the original header details of each file
+  if all(ntrl==1)
+    % each file is a continuous recording
+    combined.nTrials  = ntrl(1);
+    combined.nSamples = sum(nsmp);
+  elseif all(nsmp==nsmp(1))
+    % each file holds segments of the same length
+    combined.nTrials  = sum(ntrl);
+    combined.nSamples = nsmp(1);
+  else
+    error('cannot concatenate files');
+  end
+  % return the header of the concatenated datafiles
+  hdr = combined;
+  return
+end
+
 % optionally get the data from the URL and make a temporary local copy
 filename = fetch_url(filename);
 
@@ -121,6 +156,11 @@ checkmaxfilter = ft_getopt(varargin, 'checkmaxfilter', true);
 if isempty(headerformat)
   % only do the autodetection if the format was not specified
   headerformat = ft_filetype(filename);
+end
+
+if iscell(headerformat)
+  % this happens for datasets specified as cell array for concatenation
+  headerformat = headerformat{1};
 end
 
 % if we are dealing with a compressed dataset, inflate it first
@@ -781,6 +821,7 @@ switch headerformat
     % The following represents the code that was written by Ingrid, Robert
     % and Giovanni to get started with the EGI mff dataset format. It might
     % not support all details of the file formats.
+    %
     % An alternative implementation has been provided by EGI, this is
     % released as fieldtrip/external/egi_mff and referred further down in
     % this function as 'egi_mff_v2'.
@@ -1013,9 +1054,9 @@ switch headerformat
     if isunix && filename(1)~=filesep
       % add the full path to the dataset directory
       filename = fullfile(pwd, filename);
-    else
-      % FIXME I don't know how this is supposed to work on Windows computers
-      % with the drive letter in front of the path
+    elseif ispc && filename(2)~=':'
+      % add the full path, including drive letter
+      filename = fullfile(pwd, filename);
     end
     hdr = read_mff_header(filename);
     
@@ -1467,6 +1508,10 @@ switch headerformat
           info.vartriallength = 0;
         end
       catch
+        % this happens if fiff_read_evoked_all cannot find evoked
+        % responses, in which case it errors due to not assigning the
+        % output variable "data"
+        warning('%s does not contain data', filename);
         hdr.nSamples    = 0;
         hdr.nSamplesPre = 0;
         hdr.nTrials     = 0;
