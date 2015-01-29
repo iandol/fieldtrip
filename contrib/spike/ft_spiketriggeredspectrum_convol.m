@@ -135,7 +135,7 @@ if  isequal(cfg.taper, 'dpss')
   cfg = ft_checkopt(cfg,'tapsmofrq',{'doublevector', 'doublescalar'});
 end
 
-cfg = ft_checkconfig(cfg, 'allowed', {'taper', 'borderspikes', 't_ftimwin', 'foi', 'spikechannel', 'channel', 'taperopt', 'rejectsaturation','tapsmofrq', 'warning', 'progress'});
+cfg = ft_checkconfig(cfg, 'allowed', {'taper', 'borderspikes', 't_ftimwin', 'foi', 'spikechannel', 'channel', 'taperopt', 'rejectsaturation','tapsmofrq', 'latency', 'warning', 'progress'});
 
 % length of tapsmofrq, foi and t_ftimwin should all be matched
 if isfield(cfg,'tapsmofrq')
