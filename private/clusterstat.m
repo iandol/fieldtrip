@@ -179,11 +179,14 @@ if needpos,
     numdims = length(cfg.dim);
     if numdims == 2 || numdims == 3 % if 2D or 3D data
       ft_hastoolbox('spm8',1);
-      [posclusobs, posnum] = spm_bwlabel(tmp, 2*numdims); % use spm_bwlabel for 2D/3D data to avoid usage of image toolbox
+      % use spm_bwlabel for 2D/3D data to avoid usage of image processing toolbox
+      [posclusobs, posnum] = spm_bwlabel(tmp, 2*numdims);
     else
-      posclusobs = bwlabeln(tmp, conndef(length(cfg.dim),'min')); % spm_bwlabel yet (feb 2011) supports only 2D/3D data
+      % use bwlabeln from the image processing toolbox
+      posclusobs = bwlabeln(tmp, conndef(length(cfg.dim), 'min'));
     end
     posclusobs = posclusobs(cfg.inside);
+    
   else
     if 0
       posclusobs = findcluster(reshape(postailobs, [cfg.dim,1]),cfg.chancmbneighbstructmat,cfg.chancmbneighbselmat,cfg.minnbchan);
@@ -191,7 +194,7 @@ if needpos,
       posclusobs = findcluster(reshape(postailobs, [cfg.dim,1]),channeighbstructmat,cfg.minnbchan);
     end
     posclusobs = posclusobs(:);
-  end
+  end % if channeighbstructmat
   Nobspos = max(posclusobs(:)); % number of clusters exceeding the threshold
   fprintf('found %d positive clusters in observed data\n', Nobspos);
   
@@ -202,18 +205,20 @@ if needneg,
     % this pertains to data for which the spatial dimension can be reshaped
     % into 3D, i.e. when it is described on an ordered set of positions on a 3D-grid
     
-    
     tmp = zeros(cfg.dim);
     tmp(cfg.inside) = negtailobs;
     
     numdims = length(cfg.dim);
     if numdims == 2 || numdims == 3 % if 2D or 3D data
       ft_hastoolbox('spm8',1);
-      [negclusobs, negnum] = spm_bwlabel(tmp, 2*numdims); % use spm_bwlabel for 2D/3D data to avoid usage of image toolbox
+      % use spm_bwlabel for 2D/3D data to avoid usage of image processing toolbox
+      [negclusobs, negnum] = spm_bwlabel(tmp, 2*numdims);
     else
-      negclusobs = bwlabeln(tmp, conndef(length(cfg.dim),'min')); % spm_bwlabel yet (feb 2011) supports only 2D/3D data
+      % use bwlabeln from the image processing toolbox
+      negclusobs = bwlabeln(tmp, conndef(length(cfg.dim),'min'));
     end
     negclusobs = negclusobs(cfg.inside);
+    
   else
     if 0
       negclusobs = findcluster(reshape(negtailobs, [cfg.dim,1]),cfg.chancmbneighbstructmat,cfg.chancmbneighbselmat,cfg.minnbchan);
@@ -221,7 +226,8 @@ if needneg,
       negclusobs = findcluster(reshape(negtailobs, [cfg.dim,1]),channeighbstructmat,cfg.minnbchan);
     end
     negclusobs = negclusobs(:);
-  end
+  end % if channeighbstructmat
+  
   Nobsneg = max(negclusobs(:));
   fprintf('found %d negative clusters in observed data\n', Nobsneg);
   

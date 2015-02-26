@@ -199,7 +199,6 @@ if nargin==3
   % interpolate on the fly
   tmpcfg = keepfields(cfg, {'downsample', 'interpmethod'});
   tmpcfg.parameter = cfg.funparameter;
-  orgcfg.parameter = cfg.funparameter;
   functional = ft_sourceinterpolate(tmpcfg, functional, anatomical);
   [cfg, functional] = rollback_provenance(cfg, functional);
 end
@@ -394,14 +393,8 @@ if hasfun
   if strcmp(dimtok{1}, '{pos}')
     tmpdim = getdimsiz(functional, cfg.funparameter);
     tmpfun = nan(tmpdim);
-    if any(functional.inside)<1
-      % logical representation
-      inside = find(functional.inside(:));
-    else
-      % indexed representation
-      inside = functional.inside(:);
-    end
-    for i=inside(:)'
+    insideindx = find(functional.inside);
+    for i=insideindx(:)'
       tmpfun(i,:) = fun{i};
     end
     fun = tmpfun;       % replace the cell-array functional with a normal array
