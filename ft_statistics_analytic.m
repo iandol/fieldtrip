@@ -38,7 +38,7 @@ function [stat, cfg] = ft_statistics_analytic(cfg, dat, design)
 %
 % See also FT_TIMELOCKSTATISTICS, FT_FREQSTATISTICS, FT_SOURCESTATISTICS
 
-% Copyright (C) 2006, Robert Oostenveld
+% Copyright (C) 2006-2015, Robert Oostenveld
 %
 % This file is part of FieldTrip, see http://www.ru.nl/neuroimaging/fieldtrip
 % for the documentation and details.
@@ -61,6 +61,7 @@ function [stat, cfg] = ft_statistics_analytic(cfg, dat, design)
 % check if the input cfg is valid for this function
 cfg = ft_checkconfig(cfg, 'renamedval',  {'correctm', 'bonferoni', 'bonferroni'});
 cfg = ft_checkconfig(cfg, 'renamedval',  {'correctm', 'holms', 'holm'});
+cfg = ft_checkconfig(cfg, 'renamedval',  {'correctm', 'none', 'no'});
 cfg = ft_checkconfig(cfg, 'renamedval',  {'statfun', 'depsamplesF', 'ft_statfun_depsamplesFmultivariate'});
 cfg = ft_checkconfig(cfg, 'renamedval',  {'statfun', 'ft_statfun_depsamplesF', 'ft_statfun_depsamplesFmultivariate'});
 
