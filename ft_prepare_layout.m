@@ -21,8 +21,8 @@ function [layout, cfg] = ft_prepare_layout(cfg, data)
 %                   as-is (see below for details)
 %   cfg.rotate      number, rotation around the z-axis in degrees (default = [], which means automatic)
 %   cfg.projection  string, 2D projection method can be 'stereographic', 'orthographic', 'polar', 'gnomic' or 'inverse' (default = 'polar')
-%   cfg.elec        structure with electrode positions, or
-%   cfg.elecfile    filename containing electrode positions
+%   cfg.elec        structure with electrode definition, or
+%   cfg.elecfile    filename containing electrode definition
 %   cfg.grad        structure with gradiometer definition, or
 %   cfg.gradfile    filename containing gradiometer definition
 %   cfg.opto        structure with optode structure definition, or
@@ -387,7 +387,7 @@ elseif ischar(cfg.layout)
       fprintf('reading layout from file %s\n', cfg.layout);
       layout = readlay(cfg.layout);
     else
-      warning_once(sprintf('layout file %s was not found on your path, attempting to use a similarly named .mat file instead',cfg.layout));
+      ft_warning(sprintf('layout file %s was not found on your path, attempting to use a similarly named .mat file instead',cfg.layout));
       cfg.layout = [cfg.layout(1:end-3) 'mat'];
       layout = ft_prepare_layout(cfg);
       return;
@@ -906,22 +906,30 @@ function layout = readlay(filename)
 if ~exist(filename, 'file')
   error(sprintf('could not open layout file: %s', filename));
 end
-[chNum,X,Y,Width,Height,Lbl,Rem] = textread(filename,'%f %f %f %f %f %q %q');
+fid=fopen(filename);
+lay_string=fread(fid,inf,'char=>char')';
+fclose(fid);
 
-if length(Rem)<length(Lbl)
-  Rem{length(Lbl)} = [];
-end
+% pattern to match is 5 numeric values followed by a string that can
+% contain whitespaces and plus characters, followed by newline
+pat=['(\d+)\s+([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-]+)\s+([\d\.-]+)\s+'...
+        '([\w\s\+]+\w)\s*' sprintf('\n')];
 
-for i=1:length(Lbl)
-  if ~isempty(Rem{i})
-    % this ensures that channel names with a space in them are also supported (i.e. Neuromag)
-    Lbl{i} = [Lbl{i} ' ' Rem{i}];
-  end
-end
-layout.pos    = [X Y];
-layout.width  = Width;
-layout.height = Height;
-layout.label  = Lbl;
+matches=regexp(sprintf('%s\n',lay_string),pat,'tokens');
+
+% convert to (nchannel x 6) matrix
+layout_matrix=cat(1,matches{:});
+
+% convert values in first five columns to numeric
+num_values_cell=layout_matrix(:,1:5)';
+str_values=sprintf('%s %s %s %s %s; ', num_values_cell{:});
+num_values=str2num(str_values);
+
+% store layout information (omit channel number in first column)
+layout.pos    = num_values(:,2:3);
+layout.width  = num_values(:,4);
+layout.height = num_values(:,5);
+layout.label  = layout_matrix(:,6);
 return % function readlay
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -946,6 +954,12 @@ if isfield(sens, 'balance') && ~strcmp(sens.balance.current, 'none')
     if size(chanposorg, 1) == numel(sens.label)
         sens.chanpos = chanposorg;
     end
+% In case not all the locations have NaNs it might still be useful to plot them
+% But perhaps it'd be better to have any(any
+elseif any(all(isnan(sens.chanpos)))
+    [sel1, sel2] = match_str(sens.label, sens.labelorg);
+    sens.chanpos = chanposorg(sel2, :);
+    sens.label   = sens.labelorg(sel2);
 end
 
 fprintf('creating layout for %s system\n', ft_senstype(sens));
@@ -985,7 +999,7 @@ else
   % them around if requested
   if size(unique(prj,'rows'),1) / size(prj,1) < 0.8
     if strcmp(overlap, 'shift')
-      warning_once('the specified sensor configuration has many overlapping channels, creating a layout by shifting them around (use a template layout for better control over the positioning)');
+      ft_warning('the specified sensor configuration has many overlapping channels, creating a layout by shifting them around (use a template layout for better control over the positioning)');
       prj = shiftxy(prj', 0.2)';
       prjForDist = prj;
     elseif strcmp(overlap, 'no')

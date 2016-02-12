@@ -21,9 +21,9 @@ function [data] = ft_rejectcomponent(cfg, comp, data)
 % data.grad in further computation, for example for leadfield computation.
 %
 % The configuration structure can contain
-%   cfg.component = list of components to remove, e.g. [1 4 7] or see FT_CHANNELSELECTION
-%   cfg.demean    = 'no' or 'yes', whether to demean the input data (default = 'yes')
-%   cfg.updatesens   = 'no' or 'yes' (default = 'yes')
+%   cfg.component  = list of components to remove, e.g. [1 4 7] or see FT_CHANNELSELECTION
+%   cfg.demean     = 'no' or 'yes', whether to demean the input data (default = 'yes')
+%   cfg.updatesens = 'no' or 'yes' (default = 'yes')
 %
 % To facilitate data-handling and distributed computing you can use
 %   cfg.inputfile   =  ...
@@ -60,10 +60,10 @@ revision = '$Id$';
 % do the general setup of the function
 ft_defaults
 ft_preamble init
-ft_preamble provenance
-ft_preamble trackconfig
 ft_preamble debug
 ft_preamble loadvar comp data
+ft_preamble provenance comp data
+ft_preamble trackconfig
 
 % the abort variable is set to true or false in ft_preamble_init
 if abort
@@ -247,11 +247,7 @@ end
 % do the general cleanup and bookkeeping at the end of the function
 ft_postamble debug
 ft_postamble trackconfig
-ft_postamble provenance
-if nargin==2
-  ft_postamble previous comp
-elseif nargin==3
-  ft_postamble previous comp data
-end
-ft_postamble history data
-ft_postamble savevar data
+ft_postamble previous   comp data
+ft_postamble provenance data
+ft_postamble history    data
+ft_postamble savevar    data

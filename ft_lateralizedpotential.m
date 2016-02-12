@@ -73,10 +73,10 @@ revision = '$Id$';
 % do the general setup of the function
 ft_defaults
 ft_preamble init
-ft_preamble provenance
-ft_preamble trackconfig
 ft_preamble debug
 ft_preamble loadvar avgL avgR
+ft_preamble provenance avgL avgR
+ft_preamble trackconfig
 
 % the abort variable is set to true or false in ft_preamble_init
 if abort
@@ -111,6 +111,17 @@ lrp.plotlabel = {};
 lrp.avg       = [];
 lrp.time      = avgL.time;
 
+% add timelock signature
+if isfield(avgL, 'dimord') && isfield(avgR, 'dimord')
+    if ~strcmp(avgL.dimord, avgR.dimord)
+        error('The input data are of different dimord types');
+    else
+        lrp.dimord = avgL.dimord;
+    end
+else
+    error('''dimord'' not found. The function expects timelock data');
+end
+
 % compute the lateralized potentials
 Nchan = size(cfg.channelcmb);
 for i=1:Nchan
@@ -134,7 +145,7 @@ end
 % do the general cleanup and bookkeeping at the end of the function
 ft_postamble debug
 ft_postamble trackconfig
-ft_postamble provenance
-ft_postamble previous avgL avgR
-ft_postamble history lrp
-ft_postamble savevar lrp
+ft_postamble previous   avgL avgR
+ft_postamble provenance lrp
+ft_postamble history    lrp
+ft_postamble savevar    lrp
