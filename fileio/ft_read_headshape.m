@@ -57,7 +57,7 @@ function [shape] = ft_read_headshape(filename, varargin)
 
 % Copyright (C) 2008-2016 Robert Oostenveld
 %
-% This file is part of FieldTrip, see http://www.ru.nl/neuroimaging/fieldtrip
+% This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
 % for the documentation and details.
 %
 %    FieldTrip is free software: you can redistribute it and/or modify
@@ -121,7 +121,7 @@ if iscell(filename)
       end
       
       % concatenate any other fields
-      fnames = {'sulc' 'curv' 'area' 'thickness'};
+      fnames = {'sulc' 'curv' 'area' 'thickness' 'atlasroi'};
       for k = 1:numel(fnames)
         if isfield(bnd(1), fnames{k}) && isfield(bnd(2), fnames{k})
           shape.(fnames{k}) = cat(1, bnd.(fnames{k}));
@@ -328,7 +328,8 @@ switch fileformat
       if exist(tmpfilename, 'file'), g = gifti(tmpfilename); shape.sulc = g.cdata; end
       if exist(strrep(tmpfilename, 'sulc', 'curvature'), 'file'),  g = gifti(strrep(tmpfilename, 'sulc', 'curvature')); shape.curv = g.cdata; end
       if exist(strrep(tmpfilename, 'sulc', 'thickness'), 'file'),  g = gifti(strrep(tmpfilename, 'sulc', 'thickness')); shape.thickness = g.cdata; end
-    end
+      if exist(strrep(tmpfilename, 'sulc', 'atlasroi'),  'file'),  g = gifti(strrep(tmpfilename, 'sulc', 'atlasroi'));  shape.atlasroi  = g.cdata; end
+		end
     
   case 'caret_spec'
     [spec, headerinfo] = read_caret_spec(filename);
@@ -698,6 +699,13 @@ switch fileformat
     [pos, tri, nrm] = read_stl(filename);
     shape.pos = pos;
     shape.tri = tri;
+    
+  case 'obj'
+      ft_hastoolbox('wavefront', 1);
+      % Implemented for structure.io .obj thus far without colormapping
+      obj = read_wobj(filename);
+      shape.pos = obj.vertices;
+      shape.tri = obj.objects(2).data.vertices;
     
   case 'vtk'
     [pos, tri] = read_vtk(filename);
