@@ -32,7 +32,7 @@ function nmt_sourceplot_spm8(cfg,functional)
 %                        - Make your own field in the data with values between 0 and 1 to control opacity directly
 %
 % The following parameters can be used in all methods:
-%   **TODO** cfg.atlas         = string, filename of atlas to use (default = []) see FT_READ_ATLAS
+%   cfg.atlas         = string, filename of atlas to use (default = []) see FT_READ_ATLAS
 %                        for ROI masking (see "masking" below) or in "ortho-plotting" mode (see "ortho-plotting" below)
 %
 % The following parameters can be used for the functional data:
@@ -139,7 +139,7 @@ function nmt_sourceplot_spm8(cfg,functional)
 %
 % Author: Sarang S. Dalal
 %
-% This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
+% This file is part of FieldTrip, see http://www.ru.nl/neuroimaging/fieldtrip
 % for the documentation and details.
 %
 %    FieldTrip is free software: you can redistribute it and/or modify
@@ -169,21 +169,13 @@ ft_preamble debug
 ft_preamble loadvar functional
 
 % the abort variable is set to true or false in ft_preamble_init
-if abort
+if ft_abort
   return
 end
 
 % this is not supported any more as of 26/10/2011
 if ischar(functional)
   error('please use cfg.inputfile instead of specifying the input variable as a sting');
-end
-
-if nargin==3
-  % interpolate on the fly
-  tmpcfg = keepfields(cfg, {'downsample', 'interpmethod'});
-  tmpcfg.parameter = cfg.funparameter;
-  functional = ft_sourceinterpolate(tmpcfg, functional, anatomical);
-  [cfg, functional] = rollback_provenance(cfg, functional);
 end
 
 % ensure that old and unsupported options are not being relied on by the end-user's script
@@ -193,9 +185,13 @@ cfg = ft_checkconfig(cfg, 'deprecated', 'coordsys');
 cfg = ft_checkconfig(cfg, 'renamedval', {'funparameter', 'avg.pow', 'pow'});
 cfg = ft_checkconfig(cfg, 'renamedval', {'funparameter', 'avg.coh', 'coh'});
 cfg = ft_checkconfig(cfg, 'renamedval', {'funparameter', 'avg.mom', 'mom'});
+cfg = ft_checkconfig(cfg, 'renamedval', {'funparameter', 'avg.itc', 'itc'});
+cfg = ft_checkconfig(cfg, 'renamedval', {'funparameter', 'avg.tf', 'tf'});
 cfg = ft_checkconfig(cfg, 'renamedval', {'maskparameter', 'avg.pow', 'pow'});
 cfg = ft_checkconfig(cfg, 'renamedval', {'maskparameter', 'avg.coh', 'coh'});
 cfg = ft_checkconfig(cfg, 'renamedval', {'maskparameter', 'avg.mom', 'mom'});
+cfg = ft_checkconfig(cfg, 'renamedval', {'maskparameter', 'avg.itc', 'itc'});
+cfg = ft_checkconfig(cfg, 'renamedval', {'maskparameter', 'avg.tf', 'tf'});
 
 
 % set the defaults for all methods
@@ -205,6 +201,12 @@ cfg.title         = ft_getopt(cfg, 'title',         '');
 cfg.atlas         = ft_getopt(cfg, 'atlas',         []);
 cfg.topoplot      = ft_getopt(cfg, 'topoplot',  '');
 
+switch(getdimord(functional,cfg.funparameter))
+    case '{pos}_freq_time'
+        cfg.plottype      = ft_getopt(cfg, 'plottype', 'tf'); % default plot type is "time-freq"
+    otherwise
+        cfg.plottype      = ft_getopt(cfg, 'plottype', 'ts'); % default plot type is "time series"
+end
 
 
 if isfield(cfg, 'atlas') && ~isempty(cfg.atlas)
@@ -366,7 +368,7 @@ hasana = 1; % by definition, you's got ana if you're using this function :-)
 if ~isempty(cfg.funparameter)
   if issubfield(functional, cfg.funparameter)
     hasfun = 1;
-    fun = getsubfield(functional, cfg.funparameter);
+    tmpfun = getsubfield(functional, cfg.funparameter);
   else
     error('cfg.funparameter not found in functional');
   end
@@ -383,16 +385,24 @@ if hasfun
   
   if strcmp(dimtok{1}, '{pos}')
     tmpdim = getdimsiz(functional, cfg.funparameter);
-    tmpfun = nan(tmpdim);
+    fun = nan(tmpdim);
     insideindx = find(functional.inside);
-    for i=insideindx(:)'
-      tmpfun(i,:) = fun{i};
+    
+    tmpfun = cell2mat(tmpfun);
+    switch(dimord)
+        case '{pos}_freq_time'
+                tmpfun = reshape(tmpfun,[size(tmpfun,1)/length(insideindx) length(insideindx) size(tmpfun,2)]);
+                tmpfun = permute(tmpfun, [2 1 3]);
     end
-    fun = tmpfun;       % replace the cell-array functional with a normal array
-    clear tmpfun
+    fun(insideindx,:,:) = tmpfun; % replace the cell-array functional with a normal array
+    clear tmpfun;
     dimtok{1} = 'pos';  % update the description of the dimensions
     dimord([1 5]) = []; % remove the { and }
-  end
+  else
+    fun = tmpfun;
+    clear tmpfun;
+  end      
+
   
   if strcmp(dimord, 'pos_rgb')
     % treat functional data as rgb values
@@ -477,20 +487,23 @@ if hasfun
       fun = abs(fun);
     end
     
-    % what if fun is 4D?
     if ndims(fun)>3 || prod(dim)==size(fun,1)
       if strcmp(dimord, 'pos_freq_time')
         % functional contains time-frequency representation
         qi      = [1 1];
         hasfreq = numel(functional.freq)>1;
         hastime = numel(functional.time)>1;
-        fun     = reshape(fun, [dim numel(functional.freq) numel(functional.time)]);
+        %fun     = reshape(fun, [dim numel(functional.freq) numel(functional.time)]);
+        
+        fun = permute(fun,[1 3 2]); % reorder to pos_time_freq
+        dimord = 'pos_time_freq';
       elseif strcmp(dimord, 'pos_time')
         % functional contains evoked field
         qi      = 1;
         hasfreq = 0;
         hastime = numel(functional.time)>1;
-        fun     = reshape(fun, [dim numel(functional.time)]);
+        fun     = squeeze(fun);
+%        fun     = reshape(fun, [dim numel(functional.time)]);
       elseif strcmp(dimord, 'pos_freq')
         % functional contains frequency spectra
         qi      = 1;
@@ -662,8 +675,6 @@ end
 spm_image('init',cfg.mripath); % load/reload structural MRI
 nmt_spmfig_setup(cfg);
 
-title(cfg.title);
-
 %%% set color and opacity mapping for this figure
 if hasfun
   colormap(cfg.funcolormap);
@@ -689,58 +700,83 @@ if ~isempty(cfg.funparameter)
         hasfun = 1;
         
         st.nmt.pos = functional.pos;
-        st.nmt.cfg = cfg;
-      
-        switch(cfg.funparameter)
-            case {'mom'}
-                fun = cell2mat(getsubfield(functional,cfg.funparameter));
-                
-                inside = find(functional.inside);
-                st.nmt.fun = nan(length(functional.inside),size(fun,2));
-                st.nmt.fun(inside,:) = fun;
-                
-                st.nmt.time = functional.time;
-                
-                
-                
-                if(~isfield(cfg,'time') & ~isfield(cfg,'vox'))
-                    [~,peakind] = max(abs(st.nmt.fun(:)));
-                    [peakvox_idx,peaktime_idx] = ind2sub(size(st.nmt.fun),peakind);
-                    cfg.time_idx(1) = peaktime_idx;
-                    cfg.vox_idx = peakvox_idx;
-                end
 
-                if(~isfield(cfg,'time') & isfield(cfg,'vox'))
-                    [~,peaktime_idx] = max(abs(st.nmt.fun(cfg.vox_idx,:)));
-                    cfg.time_idx(1) = peaktime_idx;
-                end
+%        getsubfield(functional, cfg.funparameter);
+%        if(iscell(fun))
+%            st.nmt.fun = cell2mat(st.nmt.fun);
+%        end
 
-                if(isfield(cfg,'time') & ~isfield(cfg,'vox'))
-                    [~,peakvox_idx] = max(abs(st.nmt.fun(cfg.time_idx,:)));
-                    cfg.vox_idx = peakvox_idx;
-                end
-                
-                % move MRI crosshairs to desired/peak voxel
-                spm_orthviews('Reposition',st.nmt.pos(cfg.vox_idx,:))
-                
-                if(length(cfg.time_idx(1)) == 1)
-                    cfg.time_idx(2) = cfg.time_idx(1);
-                end
-                
-                st.nmt.cfg.time_idx = cfg.time_idx;
-            case 'timefreq-notyetimplemented'
-                if isfield(functional, 'time')
-                    st.nmt.time = functional.time;
-                end
-                if isfield(functional, 'freq')
-                    st.nmt.freq = functional.freq;
-                end
-            otherwise
-                st.nmt.fun = getsubfield(functional, cfg.funparameter);
-                st.nmt.cfg.time_idx = [1 1]; % no time dimension in this case
+%        switch(cfg.funparameter)
+%            case {'mom','itc'}
+
+        st.nmt.fun = fun;
+        clear fun;
+        
+        if(hastime & ~hasfreq)
+            % voxels x time
+            st.nmt.time = functional.time;
+            
+            if(~isfield(cfg,'time') & ~isfield(cfg,'vox'))
+                [~,peakind] = max(abs(st.nmt.fun(:)));
+                [peakvox_idx,peaktime_idx] = ind2sub(size(st.nmt.fun),peakind);
+                cfg.time_idx(1) = peaktime_idx;
+                cfg.vox_idx = peakvox_idx;
+            end
+            
+            if(~isfield(cfg,'time') & isfield(cfg,'vox'))
+                [~,peaktime_idx] = max(abs(st.nmt.fun(cfg.vox_idx,:)));
+                cfg.time_idx(1) = peaktime_idx;
+            end
+            
+            if(isfield(cfg,'time') & ~isfield(cfg,'vox'))
+                [~,peakvox_idx] = max(abs(st.nmt.fun(cfg.time_idx,:)));
+                cfg.vox_idx = peakvox_idx;
+            end
+            
+            % move MRI crosshairs to desired/peak voxel
+            spm_orthviews('Reposition',st.nmt.pos(cfg.vox_idx,:))
+            
+            if(length(cfg.time_idx(1)) == 1)
+                cfg.time_idx(2) = cfg.time_idx(1);
+            end
+            
+            cfg.freq_idx = 1; % frequency dimension is singleton in this case
+        elseif(hastime & hasfreq)
+            % voxels x frequency x time
+            st.nmt.time = functional.time;
+            st.nmt.freq = functional.freqbands;
+            
+            if(~isfield(cfg,'time') & ~isfield(cfg,'vox'))
+                [~,peakind] = max(abs(st.nmt.fun(:)));
+                [peakvox_idx,peaktime_idx,peakfreq_idx] = ind2sub(size(st.nmt.fun),peakind);
+                cfg.time_idx(1) = peaktime_idx;
+                cfg.freq_idx(1) = peakfreq_idx;
+                cfg.vox_idx = peakvox_idx;
+            end
+            
+            if(~isfield(cfg,'time') & isfield(cfg,'vox'))
+                [~,peaktime_idx] = max(abs(st.nmt.fun(cfg.vox_idx,:)));
+                cfg.time_idx(1) = peaktime_idx;
+            end
+            
+            if(isfield(cfg,'time') & ~isfield(cfg,'vox'))
+                [~,peakvox_idx] = max(abs(st.nmt.fun(cfg.time_idx,:)));
+                cfg.vox_idx = peakvox_idx;
+            end
+            
+            % move MRI crosshairs to desired/peak voxel
+            spm_orthviews('Reposition',st.nmt.pos(cfg.vox_idx,:))
+            
+            if(length(cfg.time_idx(1)) == 1)
+                cfg.time_idx(2) = cfg.time_idx(1);
+            end
+        else
+            cfg.time_idx = [1 1]; % no time dimension in this case, e.g., 'pow'
+            cfg.freq_idx = 1; % frequency dimension is singleton in this case
         end
 
-        st.nmt.msk = msk;
+        st.nmt.cfg = cfg;
+        st.nmt.msk = reshape(msk,size(st.nmt.fun));
         
     else
         error('cfg.funparameter not found in functional');
