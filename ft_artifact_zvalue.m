@@ -694,21 +694,17 @@ uiresume;
 
 function keyboard_cb(h, eventdata)
 
-clear tmpKey;
-if isa(eventdata,'matlab.ui.eventdata.ActionData') % only the case when clicked with mouse
-  % determine the key that corresponds to the uicontrol element that was activated
-  tmpKey = get(h, 'userdata');
+clear tmpKey
+
+tmpKey = get(h, 'userdata');
+if ~isempty(tmpKey)
   h = getparent(h); % otherwise h is empty if isa [...].ActionData
+  curKey = tmpKey;
+else
+  curKey = eventdata.Key;
 end
 
 opt = getappdata(h, 'opt');
-
-% If a mouseclick was made, use that value. If not use the pressed key
-if exist('tmpKey')
-    curKey=tmpKey;
-else
-    curKey=eventdata.Key;
-end
 
 disp(strcat('Pressed Key (or the key corresponding to the pressed button) is: ', curKey))
 switch curKey
