@@ -164,7 +164,7 @@ end
 
 % check whether rpt/subj is present and remove if necessary and whether
 hasrpt = any(ismember(dimtok, {'rpt' 'subj'}));
-if hasrpt,
+if hasrpt
   % this also deals with fourier-spectra in the input
   % or with multiple subjects in a frequency domain stat-structure
   % on the fly computation of coherence spectrum is not supported
@@ -172,24 +172,19 @@ if hasrpt,
     data = rmfield(data, 'crsspctrm');
   end
 
-  tmpcfg           = [];
-  tmpcfg.trials    = cfg.trials;
+  tmpcfg = keepfields(cfg, {'trials', 'feedback', 'showcallinfo'});
   tmpcfg.jackknife = 'no';
   % keep mask-parameter if it is set
   if ~isempty(cfg.maskparameter)
     tempmask = data.(cfg.maskparameter);
   end
   if isfield(cfg, 'parameter') && ~strcmp(cfg.parameter,'powspctrm')
-    % freqdesctiptives will only work on the powspctrm field
+    % freqdescriptives will only work on the powspctrm field
     % hence a temporary copy of the data is needed
-    tempdata.dimord    = data.dimord;
-    tempdata.freq      = data.freq;
-    tempdata.label     = data.label;
-    tempdata.time      = data.time;
-    tempdata.powspctrm = data.(cfg.parameter);
-    if isfield(data, 'cfg') tempdata.cfg = data.cfg; end
-    tempdata           = ft_freqdescriptives(tmpcfg, tempdata);
-    data.(cfg.parameter)  = tempdata.powspctrm;
+    tempdata = keepfields(data, {'dimord', 'freq', 'label', 'time', 'cfg'});
+    tempdata.powspctrm   = data.(cfg.parameter);
+    tempdata             = ft_freqdescriptives(tmpcfg, tempdata);
+    data.(cfg.parameter) = tempdata.powspctrm;
     clear tempdata
   else
     data = ft_freqdescriptives(tmpcfg, data);
@@ -494,12 +489,16 @@ end
 
 % Make the figure interactive:
 if strcmp(cfg.interactive, 'yes')
-  % first, attach data to the figure with the current axis handle as a name
-  dataname = fixname(num2str(double(gca)));
-  setappdata(gcf,dataname,data);
-  set(gcf, 'WindowButtonUpFcn',     {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR, cfg}, 'event', 'WindowButtonUpFcn'});
-  set(gcf, 'WindowButtonDownFcn',   {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR, cfg}, 'event', 'WindowButtonDownFcn'});
-  set(gcf, 'WindowButtonMotionFcn', {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR, cfg}, 'event', 'WindowButtonMotionFcn'});
+  % add the cfg/data information to the figure under identifier linked to this axis
+  ident             = ['axh' num2str(round(sum(clock.*1e6)))]; % unique identifier for this axis
+  set(gca,'tag',ident);
+  info              = guidata(gcf);
+  info.(ident).cfg  = cfg;
+  info.(ident).data = data;
+  guidata(gcf, info);
+  set(gcf, 'WindowButtonUpFcn',     {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR}, 'event', 'WindowButtonUpFcn'});
+  set(gcf, 'WindowButtonDownFcn',   {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR}, 'event', 'WindowButtonDownFcn'});
+  set(gcf, 'WindowButtonMotionFcn', {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR}, 'event', 'WindowButtonMotionFcn'});
   %   set(gcf, 'WindowButtonUpFcn',     {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR, cfg, data}, 'event', 'WindowButtonUpFcn'});
   %   set(gcf, 'WindowButtonDownFcn',   {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR, cfg, data}, 'event', 'WindowButtonDownFcn'});
   %   set(gcf, 'WindowButtonMotionFcn', {@ft_select_range, 'multiple', false, 'callback', {@select_topoplotTFR, cfg, data}, 'event', 'WindowButtonMotionFcn'});
@@ -569,15 +568,17 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SUBFUNCTION which is called after selecting a time range
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function select_topoplotTFR(cfg, varargin)
+function select_topoplotTFR(varargin)
 % first to last callback-input of ft_select_range is range
 % last callback-input of ft_select_range is contextmenu label, if used
 range = varargin{end-1};
 varargin = varargin(1:end-2); % remove range and last
 
-% get appdata belonging to current axis
-dataname = fixname(num2str(double(gca)));
-data = getappdata(gcf, dataname);
+% fetch cfg/data based on axis indentifier given as tag
+ident  = get(gca,'tag');
+info   = guidata(gcf);
+cfg    = info.(ident).cfg;
+data   = info.(ident).data;
 
 if isfield(cfg, 'inputfile')
   % the reading has already been done and varargin contains the data
@@ -601,9 +602,8 @@ elseif isfield(cfg,'showlabels') && strcmp(cfg.showlabels,'no')
 end
 fprintf('selected cfg.xlim = [%f %f]\n', cfg.xlim(1), cfg.xlim(2));
 fprintf('selected cfg.ylim = [%f %f]\n', cfg.ylim(1), cfg.ylim(2));
-p = get(gcf, 'Position');
-f = figure;
-set(f, 'Position', p);
+% ensure that the new figure appears at the same position
+f = figure('Position', get(gcf, 'Position'));
 ft_topoplotTFR(cfg, data);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
