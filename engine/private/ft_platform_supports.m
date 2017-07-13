@@ -37,11 +37,12 @@ function tf = ft_platform_supports(what,varargin)
 %   'uimenu'                        uimenu(...)
 %   'weboptions'                    weboptions(...)
 %   'parula'                        parula(...)
+%   'html'                          html rendering in desktop
 %
 % See also FT_VERSION, VERSION, VER, VERLESSTHAN
 
 if ~ischar(what)
-  error('first argument must be a string');
+  ft_error('first argument must be a string');
 end
 
 switch what
@@ -154,9 +155,12 @@ switch what
     
   case 'parula'
     tf = is_matlab() && matlabversion('2014b', Inf);
+
+  case 'html'
+    tf = ~is_octave() && usejava('desktop') && desktop('-inuse');
     
   otherwise
-    error('unsupported value for first argument: %s', what);
+    ft_error('unsupported value for first argument: %s', what);
     
 end % switch
 
