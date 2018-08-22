@@ -458,6 +458,7 @@ sync ${ARRAY[*]}
 
 ARRAY=()
 ARRAY+=(forward/private/fitsphere.m)
+ARRAY+=(plotting/private/fitsphere.m)
 ARRAY+=(private/fitsphere.m)
 sync ${ARRAY[*]}
 
@@ -1195,7 +1196,7 @@ ARRAY+=(test/private/icosahedron642.m)
 sync ${ARRAY[*]}
 
 ################################################################################
-# ignnorefields.m
+# ignorefields.m
 
 ARRAY=()
 ARRAY+=(private/ignorefields.m)
@@ -1330,6 +1331,14 @@ sync ${ARRAY[*]}
 ARRAY=()
 ARRAY+=(test/private/isalmostequal.m)
 ARRAY+=(private/isalmostequal.m)
+sync ${ARRAY[*]}
+
+################################################################################
+# isfolder.m
+
+ARRAY=()
+ARRAY+=(compat/matlablt2017b/isfolder.m)
+ARRAY+=(compat/octave/isfolder.m)
 sync ${ARRAY[*]}
 
 ################################################################################
