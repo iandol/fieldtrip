@@ -52,7 +52,7 @@ function [status] = ft_hastoolbox(toolbox, autoadd, silent)
 
 if isdeployed
   % it is not possible to check the presence of functions or change the path in a compiled application
-  status = 1;
+  status = true;
   return
 end
 
@@ -78,7 +78,8 @@ url = {
   'MATLAB2BESA'  'see http://www.besa.de/downloads/matlab/ and get the "MATLAB to BESA Export functions"'
   'EEPROBE'    'see http://www.ant-neuro.com, or contact Maarten van der Velde'
   'YOKOGAWA'   'this is deprecated, please use YOKOGAWA_MEG_READER instead'
-  'YOKOGAWA_MEG_READER' 'see http://www.yokogawa.com/me/me-login-en.htm'
+  'YOKOGAWA_MEG_READER' 'contact Ricoh engineers'
+  'RICOH_MEG_READER' 'contact Ricoh engineers'
   'BEOWULF'    'see http://robertoostenveld.nl, or contact Robert Oostenveld'
   'MENTAT'     'see http://robertoostenveld.nl, or contact Robert Oostenveld'
   'SON2'       'see http://www.kcl.ac.uk/depsta/biomedical/cfnr/lidierth.html, or contact Malcolm Lidierth'
@@ -131,7 +132,7 @@ url = {
   'MYSQL'         'see http://www.mathworks.com/matlabcentral/fileexchange/8663-mysql-database-connector'
   'ISO2MESH'      'see http://iso2mesh.sourceforge.net/cgi-bin/index.cgi?Home or contact Qianqian Fang'
   'DATAHASH'      'see http://www.mathworks.com/matlabcentral/fileexchange/31272'
-  'IBTB'          'see http://www.ibtb.org'
+  'IBTB'          'see https://github.com/selimonat/InformationBreakdownToolbox'
   'ICASSO'        'see http://www.cis.hut.fi/projects/ica/icasso'
   'XUNIT'         'see http://www.mathworks.com/matlabcentral/fileexchange/22846-matlab-xunit-test-framework'
   'PLEXON'        'available from http://www.plexon.com/assets/downloads/sdk/ReadingPLXandDDTfilesinMatlab-mexw.zip'
@@ -143,8 +144,8 @@ url = {
   'BRAINSUITE'    'see http://brainsuite.bmap.ucla.edu/processing/additional-tools/'
   'BRAINVISA'     'see http://brainvisa.info'
   'FILEEXCHANGE'  'see http://www.mathworks.com/matlabcentral/fileexchange/'
-  'NEURALYNX_V6'  'see http://neuralynx.com/research_software/file_converters_and_utilities/ and take the version from Neuralynx (windows only)'
-  'NEURALYNX_V3'  'see http://neuralynx.com/research_software/file_converters_and_utilities/ and take the version from Ueli Rutishauser'
+  'NEURALYNX_V6'  'see https://neuralynx.com/software/category/matlab-netcom-utilities/ and take the version from Neuralynx'
+  'NEURALYNX_V3'  'see http://www.urut.ch/new/serendipity/index.php?/pages/nlxtomatlab.html'
   'NPMK'          'see https://github.com/BlackrockMicrosystems/NPMK'
   'VIDEOMEG'      'see https://github.com/andreyzhd/VideoMEG'
   'WAVEFRONT'     'see http://mathworks.com/matlabcentral/fileexchange/27982-wavefront-obj-toolbox'
@@ -152,6 +153,8 @@ url = {
   'BREWERMAP'     'see https://nl.mathworks.com/matlabcentral/fileexchange/45208-colorbrewer--attractive-and-distinctive-colormaps'
   'CELLFUNCTION'  'see https://github.com/schoffelen/cellfunction'
   'MARS'          'see http://www.parralab.org/mars'
+  'JSONLAB'       'see https://se.mathworks.com/matlabcentral/fileexchange/33381-jsonlab--a-toolbox-to-encode-decode-json-files'
+  'MFFMATLABIO'   'see https://github.com/arnodelorme/mffmatlabio'
   };
 
 if nargin<2
@@ -238,7 +241,9 @@ switch toolbox
   case 'YOKOGAWA16BITBETA6'
     dependency = @()hasyokogawa('16bitBeta6');
   case 'YOKOGAWA_MEG_READER'
-    dependency = @()hasyokogawa('1.4');
+    dependency = @()hasyokogawa('1.5');
+  case 'RICOH_MEG_READER'
+    dependency = @()hasricoh('1.0');
   case 'BEOWULF'
     dependency = {'evalwulf', 'evalwulf', 'evalwulf'};
   case 'MENTAT'
@@ -309,6 +314,8 @@ switch toolbox
     dependency = {'macaque71.mat', 'motif4funct_wei'};
   case 'CCA'
     dependency = {'ccabss'};
+  case 'MFFMATLABIO'
+    dependency = {'eegplugin_mffmatlabio', 'mff_getobj'};
   case 'EGI_MFF'
     dependency = {'mff_getObject', 'mff_getSummaryInfo'};
   case 'TOOLBOX_GRAPH'
@@ -327,7 +334,7 @@ switch toolbox
   case 'DATAHASH'
     dependency = {'DataHash'};
   case 'IBTB'
-    dependency = {'make_ibtb','binr'};
+    dependency = {'binr','information'};
   case 'ICASSO'
     dependency = {'icassoEst'};
   case 'XUNIT'
@@ -371,8 +378,12 @@ switch toolbox
     dependency = {'ghdf5read' 'ghdf5fileimport'};
   case 'MARS'
     dependency = {'spm_mars_mrf'};
+  case 'JSONLAB'
+    dependency = {'loadjson' 'savejson'};
+  case 'PLOTLY'
+    dependency = {'fig2plotly' 'savejson'};
     
-    % the following are FieldTrip modules/toolboxes
+  % the following are FieldTrip modules/toolboxes
   case 'FILEIO'
     dependency = {'ft_read_header', 'ft_read_data', 'ft_read_event', 'ft_read_sens'};
   case 'FORWARD'
@@ -409,13 +420,13 @@ end
 
 % try to determine the path of the requested toolbox
 if autoadd>0 && ~status
-  
+
   % for core FieldTrip modules
   prefix = fileparts(which('ft_defaults'));
   if ~status
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-  
+
   % for external FieldTrip modules
   prefix = fullfile(fileparts(which('ft_defaults')), 'external');
   if ~status
@@ -427,7 +438,7 @@ if autoadd>0 && ~status
       feval(licensefile);
     end
   end
-  
+
   % for contributed FieldTrip extensions
   prefix = fullfile(fileparts(which('ft_defaults')), 'contrib');
   if ~status
@@ -439,25 +450,25 @@ if autoadd>0 && ~status
       feval(licensefile);
     end
   end
-  
+
   % for linux computers in the Donders Centre for Cognitive Neuroimaging
   prefix = '/home/common/matlab';
-  if ~status && isdir(prefix)
+  if ~status && isfolder(prefix)
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-  
+
   % for windows computers in the Donders Centre for Cognitive Neuroimaging
   prefix = 'h:\common\matlab';
-  if ~status && isdir(prefix)
+  if ~status && isfolder(prefix)
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-  
+
   % use the MATLAB subdirectory in your homedirectory, this works on linux and mac
   prefix = fullfile(getenv('HOME'), 'matlab');
-  if ~status && isdir(prefix)
+  if ~status && isfolder(prefix)
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-  
+
   if ~status
     % the toolbox is not on the path and cannot be added
     sel = find(strcmp(url(:,1), toolbox));
@@ -490,9 +501,10 @@ end
 % helper function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function status = myaddpath(toolbox, silent)
+global ft_default
 if isdeployed
   ft_warning('cannot change path settings for %s in a compiled application', toolbox);
-  status = 1;
+  status = true;
 elseif exist(toolbox, 'dir')
   if ~silent
     ft_warning('off','backtrace');
@@ -500,16 +512,22 @@ elseif exist(toolbox, 'dir')
     ft_warning('on','backtrace');
   end
   if any(~cellfun(@isempty, regexp(toolbox, {'spm2', 'spm5', 'spm8', 'spm12'})))
-    % SPM needs to be added with the subdirectories
+    % SPM needs to be added with all its subdirectories
     addpath(genpath(toolbox));
   else
     addpath(toolbox);
   end
-  status = 1;
+  % remember the toolbox that was just added to the path, it will be cleaned up by FT_POSTAMBLE_HASTOOLBOX
+  if ~isfield(ft_default, 'toolbox') || ~isfield(ft_default.toolbox, 'cleanup')
+    ft_default.toolbox.cleanup = {};
+  end
+  ft_default.toolbox.cleanup{end+1} = toolbox;
+  status = true;
 elseif (~isempty(regexp(toolbox, 'spm2$', 'once')) || ~isempty(regexp(toolbox, 'spm5$', 'once')) || ~isempty(regexp(toolbox, 'spm8$', 'once')) || ~isempty(regexp(toolbox, 'spm12$', 'once'))) && exist([toolbox 'b'], 'dir')
+  % the final release version of SPM is not available, add the beta version instead
   status = myaddpath([toolbox 'b'], silent);
 else
-  status = 0;
+  status = false;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -586,6 +604,9 @@ v = str2num([token{:}{:}]);
 % helper function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function status = has_license(toolbox_name)
+% NOTE: this explicitly checks out a license, which may be suboptimal in
+% terms of license use. Consider using the option 'test', but this needs to
+% be checked with respect to backward compatibility first
 status = license('checkout', toolbox_name)==1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -616,3 +637,11 @@ w = which(function_name);
 
 % must be in path and not a variable
 status = ~isempty(w) && ~isequal(w, 'variable');
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ISFOLDER is needed for versions prior to 2017b
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function tf = isfolder(dirpath)
+tf = exist(dirpath,'dir') == 7;
+

@@ -52,6 +52,14 @@ ARRAY+=(private/avgref.m)
 sync ${ARRAY[*]}
 
 ################################################################################
+# bg_rgba2rgb.m
+
+ARRAY=()
+ARRAY+=(plotting/private/bg_rgba2rgb.m)
+ARRAY+=(private/bg_rgba2rgb.m)
+sync ${ARRAY[*]}
+
+################################################################################
 # bounding_mesh.m
 
 ARRAY=()
@@ -422,6 +430,7 @@ sync ${ARRAY[*]}
 
 ARRAY=()
 ARRAY+=(forward/private/find_mesh_edge.m)
+ARRAY+=(plotting/private/find_mesh_edge.m)
 ARRAY+=(private/find_mesh_edge.m)
 sync ${ARRAY[*]}
 
@@ -440,6 +449,7 @@ sync ${ARRAY[*]}
 
 ARRAY=()
 ARRAY+=(forward/private/find_triangle_neighbours.m)
+ARRAY+=(plotting/private/find_triangle_neighbours.m)
 ARRAY+=(private/find_triangle_neighbours.m)
 sync ${ARRAY[*]}
 
@@ -448,6 +458,7 @@ sync ${ARRAY[*]}
 
 ARRAY=()
 ARRAY+=(forward/private/fitsphere.m)
+ARRAY+=(plotting/private/fitsphere.m)
 ARRAY+=(private/fitsphere.m)
 sync ${ARRAY[*]}
 
@@ -1124,6 +1135,7 @@ sync ${ARRAY[*]}
 
 ARRAY=()
 ARRAY+=(forward/private/headsurface.m)
+ARRAY+=(plotting/private/headsurface.m)
 ARRAY+=(private/headsurface.m)
 sync ${ARRAY[*]}
 
@@ -1184,7 +1196,7 @@ ARRAY+=(test/private/icosahedron642.m)
 sync ${ARRAY[*]}
 
 ################################################################################
-# ignnorefields.m
+# ignorefields.m
 
 ARRAY=()
 ARRAY+=(private/ignorefields.m)
@@ -1311,6 +1323,38 @@ sync ${ARRAY[*]}
 ARRAY=()
 ARRAY+=(connectivity/private/inv3x3.mexw64)
 ARRAY+=(src/inv3x3.mexw64)
+sync ${ARRAY[*]}
+
+################################################################################
+# isalmostequal.m
+
+ARRAY=()
+ARRAY+=(test/private/isalmostequal.m)
+ARRAY+=(private/isalmostequal.m)
+sync ${ARRAY[*]}
+
+################################################################################
+# isfile.m
+
+ARRAY=()
+ARRAY+=(compat/matlablt2017b/isfile.m)
+ARRAY+=(compat/octave/isfile.m)
+sync ${ARRAY[*]}
+
+################################################################################
+# isfolder.m
+
+ARRAY=()
+ARRAY+=(compat/matlablt2017b/isfolder.m)
+ARRAY+=(compat/octave/isfolder.m)
+sync ${ARRAY[*]}
+
+################################################################################
+# ismatch.m
+
+ARRAY=()
+ARRAY+=(private/ismatch.m)
+ARRAY+=(trialfun/private/ismatch.m)
 sync ${ARRAY[*]}
 
 ################################################################################
