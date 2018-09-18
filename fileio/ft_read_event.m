@@ -1542,17 +1542,17 @@ switch eventformat
       end
       
     elseif isepoched
-      begsample = cumsum([1 repmat(hdr.nSamples, hdr.nTrials-1, 1)']);
-      events_id = split(split(hdr.orig.epochs.event_id, ';'), ':');
-      events_label = cell2mat(events_id(:, 1));
-      events_code = str2num(cell2mat(events_id(:, 2)));
+        begsample = cumsum([1 repmat(hdr.nSamples, hdr.nTrials-1, 1)']);
+        events_id = split(split(hdr.orig.epochs.event_id, ';'), ':');
+        events_label = cell2mat(events_id(:, 1));
+        events_code = str2num(cell2mat(events_id(:, 2)));
       for i=1:hdr.nTrials
-        event(end+1).type      = 'trial';
-        event(end  ).sample    = begsample(i);
-        event(end  ).value     = events_label(events_code == hdr.orig.epochs.events(i, 3), :);
-        event(end  ).offset    = -hdr.nSamplesPre;
-        event(end  ).duration  = hdr.nSamples;
-      end
+            event(end+1).type      = 'trial';
+            event(end  ).sample    = begsample(i);
+            event(end  ).value     = events_label(events_code == hdr.orig.epochs.events(i, 3), :);
+            event(end  ).offset    = -hdr.nSamplesPre;
+            event(end  ).duration  = hdr.nSamples;
+        end
     end
     
     % check whether the *.fif file is accompanied by an *.eve file
@@ -2014,7 +2014,7 @@ switch eventformat
     
   case 'plexon_nex'
     event = read_nex_event(filename);
-	
+
   case 'plexon_plx_v2'
     ft_hastoolbox('PLEXON', 1);
     if isempty(hdr)
@@ -2133,7 +2133,7 @@ switch eventformat
       % this is OK
     elseif isempty(p)
       filename = which(filename);
-    end
+		end
     
     % 'noread' prevents reading of the spike waveforms
     % 'nosave' prevents the automatic conversion of
