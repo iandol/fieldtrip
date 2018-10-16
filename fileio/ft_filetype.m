@@ -61,11 +61,10 @@ function [type] = ft_filetype(filename, desired, varargin)
 %  - VSM-Medtech/CTF
 %  - Yokogawa & Ricoh
 %  - nifti, gifti
-%  - Nicolet *.e (currently from Natus, formerly Carefusion, Viasys and
-%                 Taugagreining. Also known as Oxford/Teca/Medelec Valor
-%                 - Nervus)
+%  - Nicolet *.e (currently from Natus, formerly Carefusion, Viasys and Taugagreining. Also known as Oxford/Teca/Medelec Valor Nervus)
+%  - Biopac *.acq
 
-% Copyright (C) 2003-2013 Robert Oostenveld
+% Copyright (C) 2003-2018 Robert Oostenveld
 %
 % This file is part of FieldTrip, see http://www.fieldtriptoolbox.org
 % for the documentation and details.
@@ -678,7 +677,11 @@ elseif isfolder(filename) && most(filetype_check_extension({ls.name}, '.ntt'))
   type = 'neuralynx_ds';
   manufacturer = 'Neuralynx';
   content = 'tetrode recordings ';
-
+  
+elseif filetype_check_extension(filename, '.mat') && contains(filename, 'times_')
+  type = 'wave_clus';
+  manufacturer = 'Department of Engineering, University of Leicester, UK';
+  content = 'sorted spikes';  
 elseif isfolder(p) && exist(fullfile(p, 'header'), 'file') && exist(fullfile(p, 'samples'), 'file') && exist(fullfile(p, 'events'), 'file')
   type = 'fcdc_buffer_offline';
   manufacturer = 'Donders Centre for Cognitive Neuroimaging';
@@ -1355,6 +1358,15 @@ elseif filetype_check_extension(filename, '.mgrid')
 elseif filetype_check_extension(filename, '.log') && filetype_check_header(filename, 'Scenario')
   type = 'presentation_log';
   manufacturer = 'NBS Presentation';
+  content = 'events';
+elseif filetype_check_extension(filename, '.acq')
+  type = 'biopac_acq';
+  manufacturer = 'Biopac';
+  content = 'physiological signals';
+elseif contains(filename, '_events.tsv')
+  % this could be a BIDS-compatible events file
+  type = 'events_tsv';
+  manufacturer = 'BIDS';
   content = 'events';
 end
 
