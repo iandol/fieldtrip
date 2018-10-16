@@ -155,6 +155,7 @@ url = {
   'MARS'          'see http://www.parralab.org/mars'
   'JSONLAB'       'see https://se.mathworks.com/matlabcentral/fileexchange/33381-jsonlab--a-toolbox-to-encode-decode-json-files'
   'MFFMATLABIO'   'see https://github.com/arnodelorme/mffmatlabio'
+  'JSONIO'        'see https://github.com/gllmflndn/JSONio'
   };
 
 if nargin<2
@@ -382,8 +383,10 @@ switch toolbox
     dependency = {'loadjson' 'savejson'};
   case 'PLOTLY'
     dependency = {'fig2plotly' 'savejson'};
+  case 'JSONIO'
+    dependency = {'jsonread', 'jsonwrite', 'jsonread.mexa64'};
     
-  % the following are FieldTrip modules/toolboxes
+    % the following are FieldTrip modules/toolboxes
   case 'FILEIO'
     dependency = {'ft_read_header', 'ft_read_data', 'ft_read_event', 'ft_read_sens'};
   case 'FORWARD'
@@ -420,13 +423,13 @@ end
 
 % try to determine the path of the requested toolbox
 if autoadd>0 && ~status
-
+  
   % for core FieldTrip modules
   prefix = fileparts(which('ft_defaults'));
   if ~status
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-
+  
   % for external FieldTrip modules
   prefix = fullfile(fileparts(which('ft_defaults')), 'external');
   if ~status
@@ -438,7 +441,7 @@ if autoadd>0 && ~status
       feval(licensefile);
     end
   end
-
+  
   % for contributed FieldTrip extensions
   prefix = fullfile(fileparts(which('ft_defaults')), 'contrib');
   if ~status
@@ -450,25 +453,25 @@ if autoadd>0 && ~status
       feval(licensefile);
     end
   end
-
+  
   % for linux computers in the Donders Centre for Cognitive Neuroimaging
   prefix = '/home/common/matlab';
   if ~status && isfolder(prefix)
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-
+  
   % for windows computers in the Donders Centre for Cognitive Neuroimaging
   prefix = 'h:\common\matlab';
   if ~status && isfolder(prefix)
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-
+  
   % use the MATLAB subdirectory in your homedirectory, this works on linux and mac
   prefix = fullfile(getenv('HOME'), 'matlab');
   if ~status && isfolder(prefix)
     status = myaddpath(fullfile(prefix, lower(toolbox)), silent);
   end
-
+  
   if ~status
     % the toolbox is not on the path and cannot be added
     sel = find(strcmp(url(:,1), toolbox));
@@ -514,6 +517,8 @@ elseif exist(toolbox, 'dir')
   if any(~cellfun(@isempty, regexp(toolbox, {'spm2', 'spm5', 'spm8', 'spm12'})))
     % SPM needs to be added with all its subdirectories
     addpath(genpath(toolbox));
+    % check whether the mex files are compatible
+    check_spm_mex;
   else
     addpath(toolbox);
   end
@@ -601,6 +606,24 @@ token = regexp(version_str,'(\d*)','tokens');
 v = str2num([token{:}{:}]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% SUBFUNCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function status = check_spm_mex()
+status = true;
+try
+  % this will always result in an error
+  spm_conv_vol
+catch
+  me = lasterror;
+  % any error is ok, except when due to an invalid MEX file
+  status = ~isequal(me.identifier, 'MATLAB:mex:ErrInvalidMEXFile');
+end
+if ~status
+  % SPM8 mex file issues are common on macOS with recent MATLAB versions
+  ft_warning('the SPM mex files are incompatible with your platform, see http://bit.ly/2OGF6US');
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % helper function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function status = has_license(toolbox_name)
@@ -628,7 +651,6 @@ else
   assert(false,'this should not happen');
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % helper function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -637,7 +659,6 @@ w = which(function_name);
 
 % must be in path and not a variable
 status = ~isempty(w) && ~isequal(w, 'variable');
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ISFOLDER is needed for versions prior to 2017b
