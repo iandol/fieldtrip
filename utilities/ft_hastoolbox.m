@@ -135,7 +135,7 @@ url = {
   'IBTB'          'see https://github.com/selimonat/InformationBreakdownToolbox'
   'ICASSO'        'see http://www.cis.hut.fi/projects/ica/icasso'
   'XUNIT'         'see http://www.mathworks.com/matlabcentral/fileexchange/22846-matlab-xunit-test-framework'
-  'PLEXON'        'available from http://www.plexon.com/assets/downloads/sdk/ReadingPLXandDDTfilesinMatlab-mexw.zip'
+  'PLEXON'        'available from https://plexon.com/wp-content/uploads/2017/08/OmniPlex-and-MAP-Offline-SDK-Bundle_0.zip'
   'MISC'          'various functions that were downloaded from http://www.mathworks.com/matlabcentral/fileexchange and elsewhere'
   '35625-INFORMATION-THEORY-TOOLBOX'      'see http://www.mathworks.com/matlabcentral/fileexchange/35625-information-theory-toolbox'
   '29046-MUTUAL-INFORMATION'              'see http://www.mathworks.com/matlabcentral/fileexchange/35625-information-theory-toolbox'
